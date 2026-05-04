@@ -18,6 +18,7 @@ public final class ModCreativeTabs {
                     .displayItems((params, output) -> {
                         output.accept(ModItems.PLANT_FIBER.get());
                         output.accept(ModItems.PLANT_CORDAGE.get());
+                        output.accept(ModItems.WOOD_CHUNK.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                     })
                     .build());

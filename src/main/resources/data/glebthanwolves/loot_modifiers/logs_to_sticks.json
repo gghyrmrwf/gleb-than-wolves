@@ -1,0 +1,16 @@
+{
+  "type": "glebthanwolves:add_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/oak_log",
+    "minecraft:blocks/birch_log",
+    "minecraft:blocks/spruce_log",
+    "minecraft:blocks/jungle_log",
+    "minecraft:blocks/acacia_log",
+    "minecraft:blocks/dark_oak_log",
+    "minecraft:blocks/mangrove_log",
+    "minecraft:blocks/cherry_log"
+  ],
+  "item": "minecraft:stick",
+  "chance": 0.05
+}

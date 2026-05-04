@@ -1,0 +1,25 @@
+{
+  "type": "glebthanwolves:multiply_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/oak_log",
+    "minecraft:blocks/birch_log",
+    "minecraft:blocks/spruce_log",
+    "minecraft:blocks/jungle_log",
+    "minecraft:blocks/acacia_log",
+    "minecraft:blocks/dark_oak_log",
+    "minecraft:blocks/mangrove_log",
+    "minecraft:blocks/cherry_log"
+  ],
+  "items": [
+    "minecraft:oak_log",
+    "minecraft:birch_log",
+    "minecraft:spruce_log",
+    "minecraft:jungle_log",
+    "minecraft:acacia_log",
+    "minecraft:dark_oak_log",
+    "minecraft:mangrove_log",
+    "minecraft:cherry_log"
+  ],
+  "factor": 0.0
+}

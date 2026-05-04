@@ -16,9 +16,12 @@ public final class ModItems {
     public static final RegistryObject<Item> PLANT_CORDAGE = ITEMS.register("plant_cordage",
             () -> new Item(new Item.Properties()));
 
+    public static final RegistryObject<Item> WOOD_CHUNK = ITEMS.register("wood_chunk",
+            () -> new Item(new Item.Properties()));
+
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",
             () -> new PrimitiveAxeItem(PrimitiveAxeItem.PRIMITIVE_TIER, 5.0f, -3.2f,
-                    new Item.Properties().durability(30)));
+                    new Item.Properties().durability(8)));
 
     private ModItems() {}
 }

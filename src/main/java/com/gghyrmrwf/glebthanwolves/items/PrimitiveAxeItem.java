@@ -9,7 +9,7 @@ public class PrimitiveAxeItem extends AxeItem {
 
     public static final Tier PRIMITIVE_TIER = new Tier() {
         @Override
-        public int getUses() { return 30; }
+        public int getUses() { return 8; }
 
         @Override
         public float getSpeed() { return 1.5F; }

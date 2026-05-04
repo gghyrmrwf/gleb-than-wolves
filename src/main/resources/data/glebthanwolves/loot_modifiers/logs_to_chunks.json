@@ -1,0 +1,18 @@
+{
+  "type": "glebthanwolves:add_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/oak_log",
+    "minecraft:blocks/birch_log",
+    "minecraft:blocks/spruce_log",
+    "minecraft:blocks/jungle_log",
+    "minecraft:blocks/acacia_log",
+    "minecraft:blocks/dark_oak_log",
+    "minecraft:blocks/mangrove_log",
+    "minecraft:blocks/cherry_log"
+  ],
+  "item": "glebthanwolves:wood_chunk",
+  "chance": 1.0,
+  "count_min": 1,
+  "count_max": 2
+}

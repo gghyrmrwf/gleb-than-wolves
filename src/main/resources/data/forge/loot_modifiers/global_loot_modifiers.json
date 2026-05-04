@@ -3,6 +3,9 @@
   "entries": [
     "glebthanwolves:grass_to_fiber",
     "glebthanwolves:leaves_to_stick",
-    "glebthanwolves:nerf_saplings"
+    "glebthanwolves:nerf_saplings",
+    "glebthanwolves:logs_remove",
+    "glebthanwolves:logs_to_chunks",
+    "glebthanwolves:logs_to_sticks"
   ]
 }
