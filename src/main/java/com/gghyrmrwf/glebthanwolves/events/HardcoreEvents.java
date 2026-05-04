@@ -15,7 +15,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Enemy;
@@ -30,6 +29,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
@@ -115,6 +115,10 @@ public class HardcoreEvents {
     private static final int   ZOMBIE_GRAB_DURATION_TICKS = 60;   // 3 sec
     private static final int   ZOMBIE_GRAB_AMPLIFIER = 1;         // Slowness II
     private static final float SKELETON_ARROW_MULTIPLIER = 1.5F;
+
+    // Iron-golem hostility (Phase 1.7).
+    private static final double GOLEM_AGGRO_RANGE = 32.0D;
+    private static final int    GOLEM_RETARGET_INTERVAL_TICKS = 20;
 
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
@@ -266,10 +270,32 @@ public class HardcoreEvents {
                     "GTW zombie speed", ZOMBIE_SPEED_MULTIPLIER);
         }
 
-        // Iron golems target the player on sight (Phase 1.7).
+        // Iron golems lose any "player-built" allegiance so canAttack(player) is true
+        // (their actual targeting is forced from the LivingTickEvent below).
         if (living instanceof IronGolem golem) {
-            golem.targetSelector.addGoal(0, new NearestAttackableTargetGoal<>(
-                    golem, Player.class, true));
+            golem.setPlayerCreated(false);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingTick(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide) {
+            return;
+        }
+        // Iron golems hunt the nearest player on sight (Phase 1.7).
+        if (entity instanceof IronGolem golem) {
+            if (golem.tickCount % GOLEM_RETARGET_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity current = golem.getTarget();
+            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
+                return;
+            }
+            Player nearest = golem.level().getNearestPlayer(golem, GOLEM_AGGRO_RANGE);
+            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+                golem.setTarget(nearest);
+            }
         }
     }
 
