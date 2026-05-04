@@ -2,6 +2,7 @@ package com.gghyrmrwf.glebthanwolves.events;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
@@ -9,6 +10,7 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -23,10 +25,12 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
@@ -125,6 +129,13 @@ public class HardcoreEvents {
     private static final double WOLF_AGGRO_RANGE = 16.0D;
     private static final int    WOLF_RETARGET_INTERVAL_TICKS = 20;
 
+    // Boats and oxygen (Phase 1.9).
+    // Vanilla boat: accel 0.04 / tick, friction 0.9 ⇒ steady-state v_max ≈ 0.4.
+    // With per-tick scale x: v_max = 0.04*x / (1 - 0.9*x). x=0.91 gives v_max ≈ 0.20,
+    // i.e. half of vanilla's max speed.
+    private static final double BOAT_VELOCITY_SCALE = 0.91D;
+    private static final int    EXTRA_AIR_DRAIN_PER_TICK = 1;
+
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
             Items.CHICKEN,
@@ -169,6 +180,22 @@ public class HardcoreEvents {
                 && isNightTime(level)
                 && level.getBrightness(LightLayer.BLOCK, pos) <= COLD_BLOCK_LIGHT_THRESHOLD) {
             player.hurt(player.damageSources().generic(), COLD_DAMAGE);
+        }
+
+        // Boats are roughly 2× slower (Phase 1.9).
+        if (player.getVehicle() instanceof Boat boat) {
+            Vec3 dm = boat.getDeltaMovement();
+            boat.setDeltaMovement(dm.x * BOAT_VELOCITY_SCALE, dm.y, dm.z * BOAT_VELOCITY_SCALE);
+        }
+
+        // Oxygen drains 2× faster underwater (Phase 1.9).
+        if (player.isEyeInFluid(FluidTags.WATER)
+                && !player.canBreatheUnderwater()
+                && !MobEffectUtil.hasWaterBreathing(player)) {
+            int air = player.getAirSupply();
+            if (air > -20) {
+                player.setAirSupply(air - EXTRA_AIR_DRAIN_PER_TICK);
+            }
         }
     }
 
