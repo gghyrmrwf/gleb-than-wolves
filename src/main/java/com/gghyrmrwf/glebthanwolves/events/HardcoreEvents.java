@@ -15,9 +15,12 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
@@ -28,6 +31,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -260,6 +264,23 @@ public class HardcoreEvents {
         if (living instanceof Zombie) {
             applyAttributeBoost(living, Attributes.MOVEMENT_SPEED, ZOMBIE_SPEED_UUID,
                     "GTW zombie speed", ZOMBIE_SPEED_MULTIPLIER);
+        }
+
+        // Iron golems target the player on sight (Phase 1.7).
+        if (living instanceof IronGolem golem) {
+            golem.targetSelector.addGoal(0, new NearestAttackableTargetGoal<>(
+                    golem, Player.class, true));
+        }
+    }
+
+    @SubscribeEvent
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel().isClientSide) {
+            return;
+        }
+        // Block trade GUI for villagers and wandering traders (Phase 1.7).
+        if (event.getTarget() instanceof AbstractVillager) {
+            event.setCanceled(true);
         }
     }
 
