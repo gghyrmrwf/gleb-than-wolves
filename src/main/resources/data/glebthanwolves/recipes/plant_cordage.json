@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "F",
+    "F",
+    "F"
+  ],
+  "key": {
+    "F": {
+      "item": "glebthanwolves:plant_fiber"
+    }
+  },
+  "result": {
+    "item": "glebthanwolves:plant_cordage",
+    "count": 1
+  }
+}

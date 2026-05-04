@@ -1,0 +1,18 @@
+{
+  "type": "glebthanwolves:add_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/oak_leaves",
+    "minecraft:blocks/birch_leaves",
+    "minecraft:blocks/spruce_leaves",
+    "minecraft:blocks/jungle_leaves",
+    "minecraft:blocks/acacia_leaves",
+    "minecraft:blocks/dark_oak_leaves",
+    "minecraft:blocks/cherry_leaves",
+    "minecraft:blocks/mangrove_leaves",
+    "minecraft:blocks/azalea_leaves",
+    "minecraft:blocks/flowering_azalea_leaves"
+  ],
+  "item": "minecraft:stick",
+  "chance": 0.08
+}

@@ -1,5 +1,6 @@
 package com.gghyrmrwf.glebthanwolves;
 
+import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -19,11 +20,17 @@ public class GlebThanWolves {
     public GlebThanWolves() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
+
+        ModItems.ITEMS.register(modEventBus);
+        ModCreativeTabs.CREATIVE_TABS.register(modEventBus);
+        ModLootModifiers.GLM_SERIALIZERS.register(modEventBus);
+
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new BushcraftBreakEvents());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("[Gleb Than Wolves] common setup complete — mod loaded");
+        LOGGER.info("[Gleb Than Wolves] common setup complete — Phase 1.1 bushcraft loaded");
     }
 
     @SubscribeEvent
