@@ -16,6 +16,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Zombie;
@@ -119,6 +120,10 @@ public class HardcoreEvents {
     // Iron-golem hostility (Phase 1.7).
     private static final double GOLEM_AGGRO_RANGE = 32.0D;
     private static final int    GOLEM_RETARGET_INTERVAL_TICKS = 20;
+
+    // Wolf hostility (Phase 1.8).
+    private static final double WOLF_AGGRO_RANGE = 16.0D;
+    private static final int    WOLF_RETARGET_INTERVAL_TICKS = 20;
 
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
@@ -295,6 +300,22 @@ public class HardcoreEvents {
             Player nearest = golem.level().getNearestPlayer(golem, GOLEM_AGGRO_RANGE);
             if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
                 golem.setTarget(nearest);
+            }
+        }
+
+        // Wild wolves hunt the nearest player on sight (Phase 1.8).
+        if (entity instanceof Wolf wolf && !wolf.isTame()) {
+            if (wolf.tickCount % WOLF_RETARGET_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity current = wolf.getTarget();
+            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
+                return;
+            }
+            Player nearest = wolf.level().getNearestPlayer(wolf, WOLF_AGGRO_RANGE);
+            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+                wolf.setTarget(nearest);
+                wolf.setIsInterested(true);
             }
         }
     }
