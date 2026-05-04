@@ -41,7 +41,9 @@ import java.util.UUID;
  *    permanent attribute modifier on {@link Attributes#MAX_HEALTH}, applied on
  *    every level-join (login, respawn, dimension change).
  *  — Eating raw beef / chicken / porkchop / mutton / rabbit / cod / salmon /
- *    tropical_fish applies Hunger I for {@link #RAW_FOOD_HUNGER_TICKS} ticks.
+ *    tropical_fish applies Hunger I for {@link #RAW_FOOD_HUNGER_TICKS} ticks
+ *    AND deals {@link #RAW_FOOD_DAMAGE} HP of generic (armor-bypassing) damage
+ *    per swallow.
  *  — Eating golden apple / enchanted golden apple immediately strips the powerful
  *    effects (regeneration, absorption, resistance, fire resistance). Hunger /
  *    saturation gain stays.
@@ -82,8 +84,9 @@ public class HardcoreEvents {
     // 0.05 exhaustion per tick = 1.0/sec → 1 food unit per ~4 sec, ~6× vanilla casual rate.
     private static final float EXTRA_EXHAUSTION_PER_TICK = 0.05F;
 
-    // Raw food hunger debuff (Phase 1.3).
+    // Raw food hunger debuff (Phase 1.3) and direct HP damage (Phase 1.5).
     private static final int RAW_FOOD_HUNGER_TICKS = 240;
+    private static final float RAW_FOOD_DAMAGE = 1.0F; // half a heart
 
     // Sleep tweaks (Phase 1.4).
     private static final float SLEEP_FAIL_CHANCE = 0.20F;
@@ -137,6 +140,7 @@ public class HardcoreEvents {
                     0,
                     false,
                     true));
+            player.hurt(player.damageSources().generic(), RAW_FOOD_DAMAGE);
         }
 
         // Strip the powerful effects from golden apples right after vanilla applies them.
