@@ -1,10 +1,13 @@
 package com.gghyrmrwf.glebthanwolves.events;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,14 +15,19 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -92,6 +100,18 @@ public class HardcoreEvents {
     private static final float SLEEP_FAIL_CHANCE = 0.20F;
     private static final int PHANTOM_SPAWN_THRESHOLD = 72001; // PhantomSpawner triggers at > 72000.
 
+    // Phase 1.6 environmental / combat tweaks.
+    private static final float FALL_DAMAGE_MULTIPLIER = 1.5F;
+    private static final int   RAIN_DAMAGE_INTERVAL_TICKS = 200;  // every 10 sec
+    private static final float RAIN_DAMAGE = 1.0F;                // 0.5 hearts
+    private static final int   COLD_DAMAGE_INTERVAL_TICKS = 600;  // every 30 sec
+    private static final float COLD_DAMAGE = 1.0F;                // 0.5 hearts
+    private static final int   COLD_BLOCK_LIGHT_THRESHOLD = 7;
+    private static final float ZOMBIE_GRAB_CHANCE = 0.30F;
+    private static final int   ZOMBIE_GRAB_DURATION_TICKS = 60;   // 3 sec
+    private static final int   ZOMBIE_GRAB_AMPLIFIER = 1;         // Slowness II
+    private static final float SKELETON_ARROW_MULTIPLIER = 1.5F;
+
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
             Items.CHICKEN,
@@ -121,6 +141,67 @@ public class HardcoreEvents {
         if (player.getFoodData().getFoodLevel() > FAST_DRAIN_THRESHOLD) {
             player.causeFoodExhaustion(EXTRA_EXHAUSTION_PER_TICK);
         }
+
+        Level level = player.level();
+        BlockPos pos = player.blockPosition();
+
+        // Rain damage — half a heart every 10 sec while exposed to actual precipitation.
+        if (player.tickCount % RAIN_DAMAGE_INTERVAL_TICKS == 0
+                && level.isRainingAt(pos.above())) {
+            player.hurt(player.damageSources().generic(), RAIN_DAMAGE);
+        }
+
+        // Cold damage at night — half a heart every 30 sec when no nearby block-light heat source.
+        if (player.tickCount % COLD_DAMAGE_INTERVAL_TICKS == 0
+                && isNightTime(level)
+                && level.getBrightness(LightLayer.BLOCK, pos) <= COLD_BLOCK_LIGHT_THRESHOLD) {
+            player.hurt(player.damageSources().generic(), COLD_DAMAGE);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingHurt(LivingHurtEvent event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        DamageSource source = event.getSource();
+        LivingEntity victim = event.getEntity();
+
+        // Skeleton arrows hit harder, even against armor (already armor-piercing in vanilla
+        // for projectile, but we just bump base damage).
+        if (source.getDirectEntity() instanceof AbstractArrow
+                && source.getEntity() instanceof AbstractSkeleton) {
+            event.setAmount(event.getAmount() * SKELETON_ARROW_MULTIPLIER);
+        }
+
+        // Player-only effects below.
+        if (!(victim instanceof Player player)) {
+            return;
+        }
+        if (player.isCreative() || player.isSpectator()) {
+            return;
+        }
+
+        // Heavier fall damage.
+        if (source.is(DamageTypes.FALL)) {
+            event.setAmount(event.getAmount() * FALL_DAMAGE_MULTIPLIER);
+        }
+
+        // Zombie grab — chance to slow the player on a zombie hit.
+        if (source.getEntity() instanceof Zombie
+                && player.level().random.nextFloat() < ZOMBIE_GRAB_CHANCE) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.MOVEMENT_SLOWDOWN,
+                    ZOMBIE_GRAB_DURATION_TICKS,
+                    ZOMBIE_GRAB_AMPLIFIER,
+                    false,
+                    true));
+        }
+    }
+
+    private static boolean isNightTime(Level level) {
+        long t = level.getDayTime() % 24000L;
+        return t >= 13000L && t <= 23000L;
     }
 
     @SubscribeEvent
