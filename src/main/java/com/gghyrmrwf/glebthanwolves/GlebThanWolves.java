@@ -1,6 +1,8 @@
 package com.gghyrmrwf.glebthanwolves;
 
 import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
+import com.gghyrmrwf.glebthanwolves.events.HardcoreEvents;
+import com.gghyrmrwf.glebthanwolves.events.WorldEvents;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -27,10 +29,12 @@ public class GlebThanWolves {
 
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new BushcraftBreakEvents());
+        MinecraftForge.EVENT_BUS.register(new HardcoreEvents());
+        MinecraftForge.EVENT_BUS.register(new WorldEvents());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("[Gleb Than Wolves] common setup complete — Phase 1.1 bushcraft loaded");
+        LOGGER.info("[Gleb Than Wolves] common setup complete — phases 1.1–1.3 loaded");
     }
 
     @SubscribeEvent
