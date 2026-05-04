@@ -5,7 +5,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,7 +15,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.TickEvent;
@@ -33,12 +31,12 @@ import java.util.UUID;
  * Phase 1.3 + 1.4 — hardcore tweaks for the player and hostile mobs.
  *
  * Player:
- *  — Food level is hard-capped at {@link #FOOD_CAP} every tick. Vanilla's client-side
- *    sprint check requires {@code foodLevel > 6}, so the player can never sprint.
- *    Saturation is also wiped to 0 to keep the cap stable.
- *  — Because the food cap blocks vanilla regen ({@code foodLevel >= 18} required),
- *    we run our own slow regeneration: 1 HP every 80 ticks while hurt and not on
- *    Peaceful difficulty.
+ *  — Sprint is gated by accelerated hunger drain. While {@code foodLevel > 6}
+ *    we add {@link #EXTRA_EXHAUSTION_PER_TICK} exhaustion every tick, draining
+ *    food roughly 6× faster than vanilla. Once foodLevel reaches 6 the vanilla
+ *    client-side check (`foodLevel > 6`) stops the player from sprinting, and
+ *    we leave drain at vanilla rate from there on. Regeneration keeps using
+ *    vanilla rules.
  *  — Max health is reduced to {@link #PLAYER_MAX_HEALTH} HP (5 hearts) via a
  *    permanent attribute modifier on {@link Attributes#MAX_HEALTH}, applied on
  *    every level-join (login, respawn, dimension change).
@@ -77,11 +75,12 @@ public class HardcoreEvents {
     private static final UUID ZOMBIE_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa04");
     private static final double ZOMBIE_SPEED_MULTIPLIER = 0.20D;
 
-    // Sprint blocker via permanent hunger (Phase 1.4).
-    private static final int FOOD_CAP = 6;
-
-    // Manual regen interval (Phase 1.4).
-    private static final int REGEN_INTERVAL_TICKS = 80;
+    // Accelerated hunger drain to gate sprint (Phase 1.4).
+    // Vanilla client refuses to start sprinting while foodLevel <= 6, so we just
+    // make food drain quickly until that threshold and let vanilla take over.
+    private static final int FAST_DRAIN_THRESHOLD = 6;
+    // 0.05 exhaustion per tick = 1.0/sec → 1 food unit per ~4 sec, ~6× vanilla casual rate.
+    private static final float EXTRA_EXHAUSTION_PER_TICK = 0.05F;
 
     // Raw food hunger debuff (Phase 1.3).
     private static final int RAW_FOOD_HUNGER_TICKS = 240;
@@ -114,20 +113,10 @@ public class HardcoreEvents {
             return;
         }
 
-        // Permanent-hunger sprint blocker. Client refuses to sprint when foodLevel <= 6.
-        FoodData food = player.getFoodData();
-        if (food.getFoodLevel() != FOOD_CAP) {
-            food.setFoodLevel(FOOD_CAP);
-        }
-        if (food.getSaturationLevel() > 0F) {
-            food.setSaturation(0F);
-        }
-
-        // Manual regen — vanilla regen needs foodLevel >= 18, which the cap forbids.
-        if (player.level().getDifficulty() != Difficulty.PEACEFUL
-                && player.tickCount % REGEN_INTERVAL_TICKS == 0
-                && player.isHurt()) {
-            player.heal(1.0F);
+        // Accelerated hunger drain — drain ~6× faster while above the sprint threshold.
+        // Once foodLevel <= 6, vanilla blocks sprint and we stop adding extra exhaustion.
+        if (player.getFoodData().getFoodLevel() > FAST_DRAIN_THRESHOLD) {
+            player.causeFoodExhaustion(EXTRA_EXHAUSTION_PER_TICK);
         }
     }
 
