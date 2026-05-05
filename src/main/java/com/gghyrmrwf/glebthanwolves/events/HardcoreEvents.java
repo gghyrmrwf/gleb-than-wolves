@@ -33,6 +33,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -219,7 +220,22 @@ public class HardcoreEvents {
     private static final int    SLEEP_DEPRIVATION_REFRESH_INTERVAL_TICKS = 100;
     private static final int    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS = 200;
     private static final String AWAKE_TICKS_TAG = "GTWAwakeTicks";
+
+    // World & items (Phase 1.14).
+    // XP loss on death: keep this fraction of total XP through respawn.
+    private static final float  DEATH_XP_KEEP_FRACTION = 0.50F;
+    // XP orbs expire faster: vanilla age limit is 6000 ticks; we set spawn-age so they
+    // live only this many ticks after appearing.
+    private static final int    XP_ORB_LIFETIME_TICKS = 600;     // 30 sec
+    private static final int    VANILLA_XP_ORB_LIFETIME_TICKS = 6000;
+    // Swamp/mangrove slow: Slowness I while standing in water in swamp biomes.
+    private static final int    SWAMP_SLOW_REFRESH_INTERVAL_TICKS = 40;
+    private static final int    SWAMP_SLOW_DURATION_TICKS = 60;
+    // Hostile flora multipliers.
+    private static final float  CACTUS_DAMAGE_MULTIPLIER = 2.0F;
+    private static final float  SWEET_BERRY_DAMAGE_MULTIPLIER = 3.0F;
     private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
+    private static final java.lang.reflect.Field XP_ORB_AGE;
     static {
         java.lang.reflect.Field f;
         try {
@@ -229,6 +245,15 @@ public class HardcoreEvents {
             f = null;
         }
         CREEPER_EXPLOSION_RADIUS = f;
+
+        java.lang.reflect.Field af;
+        try {
+            af = ExperienceOrb.class.getDeclaredField("age");
+            af.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            af = null;
+        }
+        XP_ORB_AGE = af;
     }
 
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
@@ -425,6 +450,18 @@ public class HardcoreEvents {
                     SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS, 0,
                     false, false, true));
         }
+
+        // Phase 1.14 — swamp/mangrove slow while standing in water.
+        if (player.tickCount % SWAMP_SLOW_REFRESH_INTERVAL_TICKS == 0
+                && player.isInWater()) {
+            var holder = level.getBiome(pos);
+            if (holder.is(Biomes.SWAMP) || holder.is(Biomes.MANGROVE_SWAMP)) {
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.MOVEMENT_SLOWDOWN,
+                        SWAMP_SLOW_DURATION_TICKS, 0,
+                        false, false, true));
+            }
+        }
     }
 
     private static boolean isMidday(Level level) {
@@ -482,6 +519,16 @@ public class HardcoreEvents {
                 || source.is(DamageTypes.HOT_FLOOR)
                 || source.is(DamageTypes.ON_FIRE)) {
             event.setAmount(event.getAmount() * LAVA_DAMAGE_MULTIPLIER);
+        }
+
+        // Cactus damage 2× (Phase 1.14).
+        if (source.is(DamageTypes.CACTUS)) {
+            event.setAmount(event.getAmount() * CACTUS_DAMAGE_MULTIPLIER);
+        }
+
+        // Sweet berry bush damage 3× (Phase 1.14).
+        if (source.is(DamageTypes.SWEET_BERRY_BUSH)) {
+            event.setAmount(event.getAmount() * SWEET_BERRY_DAMAGE_MULTIPLIER);
         }
 
         // Zombie grab — chance to slow the player on a zombie hit.
@@ -546,6 +593,17 @@ public class HardcoreEvents {
         if (event.getLevel().isClientSide) {
             return;
         }
+
+        // XP orbs expire after 30 sec instead of 5 min (Phase 1.14).
+        if (event.getEntity() instanceof ExperienceOrb && XP_ORB_AGE != null) {
+            try {
+                XP_ORB_AGE.setInt(event.getEntity(),
+                        VANILLA_XP_ORB_LIFETIME_TICKS - XP_ORB_LIFETIME_TICKS);
+            } catch (IllegalAccessException ignored) {
+            }
+            return;
+        }
+
         if (!(event.getEntity() instanceof LivingEntity living)) {
             return;
         }
@@ -728,6 +786,25 @@ public class HardcoreEvents {
             Stat<ResourceLocation> stat = Stats.CUSTOM.get(Stats.TIME_SINCE_REST);
             player.getStats().setValue(player, stat, PHANTOM_SPAWN_THRESHOLD);
         });
+    }
+
+    @SubscribeEvent
+    public void onPlayerClone(PlayerEvent.Clone event) {
+        if (!event.isWasDeath()) {
+            return;
+        }
+        Player old = event.getOriginal();
+        Player neu = event.getEntity();
+        // Vanilla resets new player's totalExperience to 0; we re-grant 50% of the old.
+        old.reviveCaps();
+        try {
+            int kept = (int) Math.floor(old.totalExperience * DEATH_XP_KEEP_FRACTION);
+            if (kept > 0) {
+                neu.giveExperiencePoints(kept);
+            }
+        } finally {
+            old.invalidateCaps();
+        }
     }
 
     @SubscribeEvent
