@@ -25,7 +25,7 @@ public class DarkNightEvents {
     private static final int DARK_NIGHT_END_TICK = 23000;
     private static final int DARKNESS_KILL_TICKS = 6000;
     private static final int DARKNESS_ACTIONBAR_INTERVAL_TICKS = 100;
-    private static final int DARKNESS_SAFE_BLOCK_LIGHT = 4;
+    private static final int DARKNESS_SAFE_BLOCK_LIGHT = 1;
 
     private static final String DARKNESS_TIMER_TAG = "GTWDarkNightDarknessTicks";
 
@@ -100,7 +100,8 @@ public class DarkNightEvents {
 
     private static boolean isStandingInDarkness(ServerLevel level, BlockPos pos) {
         return level.isLoaded(pos)
-                && level.getBrightness(LightLayer.BLOCK, pos) < DARKNESS_SAFE_BLOCK_LIGHT;
+                && level.getBrightness(LightLayer.BLOCK, pos) <= DARKNESS_SAFE_BLOCK_LIGHT
+                && !level.canSeeSky(pos);
     }
 
     private static void clearDarknessTimer(ServerPlayer player) {

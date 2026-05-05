@@ -123,8 +123,8 @@ shippable as a PR.
 - Every fifth overworld night (5, 10, 15...) becomes much darker through
   client fog/lightmap changes, without vanilla Blindness/Darkness effects.
 - Sleep is blocked during that night.
-- Standing without enough block light for 5 minutes kills the player with a
-  mysterious custom death message; open sky does not protect.
+- Standing in deep darkness for 5 minutes kills the player with a mysterious
+  custom death message.
 - Next: decide whether chainmail stays as early loot armor or becomes a custom
   craft path.
 
