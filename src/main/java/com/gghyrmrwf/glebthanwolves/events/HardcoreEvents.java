@@ -27,9 +27,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -136,6 +139,26 @@ public class HardcoreEvents {
     private static final double BOAT_VELOCITY_SCALE = 0.91D;
     private static final int    EXTRA_AIR_DRAIN_PER_TICK = 1;
 
+    // Movement complications (Phase 1.10).
+    // Sneak speed: -50% via MULTIPLY_TOTAL on MOVEMENT_SPEED while crouching.
+    private static final UUID   SNEAK_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa10");
+    private static final double SNEAK_SPEED_DELTA = -0.5D;
+    // Snow / powder snow slow: -25% via MULTIPLY_TOTAL on MOVEMENT_SPEED.
+    private static final UUID   SNOW_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa11");
+    private static final double SNOW_SPEED_DELTA = -0.25D;
+    // Encumbrance: ≥ this many filled inventory slots → Slowness I + Mining Fatigue I.
+    private static final int    ENCUMBRANCE_FILL_THRESHOLD = 27;
+    private static final int    ENCUMBRANCE_REFRESH_INTERVAL_TICKS = 40;
+    private static final int    ENCUMBRANCE_EFFECT_DURATION_TICKS = 60;
+    // Swim slow: scale horizontal velocity in water each tick. 0.85 → ~ -30% sustained.
+    private static final double SWIM_VELOCITY_SCALE = 0.85D;
+    // Climb (ladders/vines/scaffolding): scale vertical velocity by 0.7 each tick.
+    private static final double CLIMB_VELOCITY_SCALE = 0.70D;
+    // Ice slipperiness: small per-tick momentum boost while sliding on ice w/o input.
+    private static final double ICE_SLIDE_SCALE = 1.02D;
+    private static final double ICE_SLIDE_MIN_SPEED = 0.05D;
+    private static final double ICE_SLIDE_MAX_SPEED = 0.50D;
+
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
             Items.CHICKEN,
@@ -196,6 +219,88 @@ public class HardcoreEvents {
             if (air > -20) {
                 player.setAirSupply(air - EXTRA_AIR_DRAIN_PER_TICK);
             }
+        }
+
+        // Phase 1.10 — movement complications.
+
+        // Sneak ×0.5 via dynamic MOVEMENT_SPEED modifier.
+        toggleSpeedModifier(player, SNEAK_SPEED_UUID, "GTW sneak slow",
+                SNEAK_SPEED_DELTA, player.isCrouching());
+
+        // Snow / powder snow slow via dynamic MOVEMENT_SPEED modifier.
+        BlockState atFeet  = level.getBlockState(pos);
+        BlockState belowFeet = level.getBlockState(pos.below());
+        boolean inSnow = atFeet.is(Blocks.SNOW)
+                || atFeet.is(Blocks.POWDER_SNOW)
+                || belowFeet.is(Blocks.SNOW)
+                || belowFeet.is(Blocks.POWDER_SNOW);
+        toggleSpeedModifier(player, SNOW_SPEED_UUID, "GTW snow slow",
+                SNOW_SPEED_DELTA, inSnow);
+
+        // Ice slipperiness — give a tiny per-tick momentum boost while sliding.
+        if (!player.isCrouching() && !player.isInWater()) {
+            BlockState below = level.getBlockState(pos.below());
+            boolean onIce = below.is(Blocks.ICE)
+                    || below.is(Blocks.PACKED_ICE)
+                    || below.is(Blocks.BLUE_ICE)
+                    || below.is(Blocks.FROSTED_ICE);
+            if (onIce) {
+                Vec3 dm = player.getDeltaMovement();
+                double mag = Math.sqrt(dm.x * dm.x + dm.z * dm.z);
+                if (mag > ICE_SLIDE_MIN_SPEED && mag < ICE_SLIDE_MAX_SPEED) {
+                    player.setDeltaMovement(dm.x * ICE_SLIDE_SCALE, dm.y, dm.z * ICE_SLIDE_SCALE);
+                }
+            }
+        }
+
+        // Swim slow — scale horizontal velocity in water each tick.
+        if (player.isInWater() && player.getVehicle() == null) {
+            Vec3 dm = player.getDeltaMovement();
+            player.setDeltaMovement(dm.x * SWIM_VELOCITY_SCALE, dm.y, dm.z * SWIM_VELOCITY_SCALE);
+        }
+
+        // Climbing slower — scale vertical velocity on ladders/vines/scaffolding.
+        if (player.onClimbable() && !player.onGround()) {
+            Vec3 dm = player.getDeltaMovement();
+            if (Math.abs(dm.y) > 0.01D) {
+                player.setDeltaMovement(dm.x, dm.y * CLIMB_VELOCITY_SCALE, dm.z);
+            }
+        }
+
+        // Encumbrance — heavy inventory imposes Slowness I + Mining Fatigue I.
+        if (player.tickCount % ENCUMBRANCE_REFRESH_INTERVAL_TICKS == 0) {
+            int filled = 0;
+            for (ItemStack s : player.getInventory().items) {
+                if (!s.isEmpty()) {
+                    filled++;
+                }
+            }
+            if (filled >= ENCUMBRANCE_FILL_THRESHOLD) {
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.MOVEMENT_SLOWDOWN,
+                        ENCUMBRANCE_EFFECT_DURATION_TICKS, 0,
+                        false, false, true));
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.DIG_SLOWDOWN,
+                        ENCUMBRANCE_EFFECT_DURATION_TICKS, 0,
+                        false, false, true));
+            }
+        }
+    }
+
+    private static void toggleSpeedModifier(Player player, UUID uuid, String name, double delta, boolean active) {
+        AttributeInstance speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed == null) {
+            return;
+        }
+        AttributeModifier existing = speed.getModifier(uuid);
+        if (active) {
+            if (existing == null) {
+                speed.addTransientModifier(new AttributeModifier(
+                        uuid, name, delta, AttributeModifier.Operation.MULTIPLY_TOTAL));
+            }
+        } else if (existing != null) {
+            speed.removeModifier(uuid);
         }
     }
 
