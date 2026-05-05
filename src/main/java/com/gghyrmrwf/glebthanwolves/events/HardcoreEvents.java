@@ -32,14 +32,19 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
@@ -179,6 +184,24 @@ public class HardcoreEvents {
     // Headless creeper: chance to spawn with bumped explosion radius (3 -> 5).
     private static final float  HEADLESS_CREEPER_CHANCE = 0.20F;
     private static final int    HEADLESS_CREEPER_RADIUS = 5;
+
+    // Environment (Phase 1.12).
+    // Lightning storm: per player check every N ticks, chance per check to strike near them.
+    private static final int    LIGHTNING_CHECK_INTERVAL_TICKS = 400;
+    private static final float  LIGHTNING_STRIKE_CHANCE = 0.05F;
+    private static final int    LIGHTNING_OFFSET_RANGE = 3; // strike within ±3 blocks
+    // Desert heat at midday: -0.5 HP every 15 sec if no helmet, in DESERT biome around noon.
+    private static final int    DESERT_HEAT_INTERVAL_TICKS = 300;
+    private static final float  DESERT_HEAT_DAMAGE = 1.0F;
+    private static final long   MIDDAY_START = 5000L;
+    private static final long   MIDDAY_END   = 7000L;
+    // Snow biome cold during day: -0.5 HP every 60 sec if no chest armor, in cold biome.
+    private static final int    SNOW_COLD_INTERVAL_TICKS = 1200;
+    private static final float  SNOW_COLD_DAMAGE = 1.0F;
+    // Lava more aggressive: hit damage multiplier and minimum on-fire ticks.
+    private static final float  LAVA_DAMAGE_MULTIPLIER = 1.5F;
+    private static final int    LAVA_FIRE_MIN_TICKS = 200; // 10 sec
+    // Note: meteors at night are spawned from WorldEvents.onLevelTick.
     private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
     static {
         java.lang.reflect.Field f;
@@ -318,6 +341,52 @@ public class HardcoreEvents {
                         false, false, true));
             }
         }
+
+        // Phase 1.12 — environment.
+
+        // Lightning during thunderstorm: occasionally strike near an exposed player.
+        if (level instanceof ServerLevel sl
+                && sl.isThundering()
+                && player.tickCount % LIGHTNING_CHECK_INTERVAL_TICKS == 0
+                && level.canSeeSky(pos)
+                && level.getRandom().nextFloat() < LIGHTNING_STRIKE_CHANCE) {
+            int ox = level.getRandom().nextInt(LIGHTNING_OFFSET_RANGE * 2 + 1) - LIGHTNING_OFFSET_RANGE;
+            int oz = level.getRandom().nextInt(LIGHTNING_OFFSET_RANGE * 2 + 1) - LIGHTNING_OFFSET_RANGE;
+            BlockPos strike = pos.offset(ox, 0, oz);
+            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(sl);
+            if (bolt != null) {
+                bolt.moveTo(Vec3.atBottomCenterOf(strike));
+                sl.addFreshEntity(bolt);
+            }
+        }
+
+        // Desert heat at midday: damages player if no helmet in DESERT biome around noon.
+        if (player.tickCount % DESERT_HEAT_INTERVAL_TICKS == 0
+                && isMidday(level)
+                && player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()
+                && level.getBiome(pos).is(Biomes.DESERT)) {
+            player.hurt(player.damageSources().generic(), DESERT_HEAT_DAMAGE);
+        }
+
+        // Snow biome cold during day: damages player if no chest armor in cold biome.
+        if (player.tickCount % SNOW_COLD_INTERVAL_TICKS == 0
+                && !isNightTime(level)
+                && player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()) {
+            Biome biome = level.getBiome(pos).value();
+            if (biome.coldEnoughToSnow(pos)) {
+                player.hurt(player.damageSources().generic(), SNOW_COLD_DAMAGE);
+            }
+        }
+
+        // Lava more aggressive: keep player on fire longer when in lava.
+        if (player.isInLava() && player.getRemainingFireTicks() < LAVA_FIRE_MIN_TICKS) {
+            player.setRemainingFireTicks(LAVA_FIRE_MIN_TICKS);
+        }
+    }
+
+    private static boolean isMidday(Level level) {
+        long t = level.getDayTime() % 24000L;
+        return t >= MIDDAY_START && t <= MIDDAY_END;
     }
 
     private static void toggleSpeedModifier(Player player, UUID uuid, String name, double delta, boolean active) {
@@ -362,6 +431,14 @@ public class HardcoreEvents {
         // Heavier fall damage.
         if (source.is(DamageTypes.FALL)) {
             event.setAmount(event.getAmount() * FALL_DAMAGE_MULTIPLIER);
+        }
+
+        // Lava and fire-from-fire damage hits 1.5× harder (Phase 1.12).
+        if (source.is(DamageTypes.LAVA)
+                || source.is(DamageTypes.IN_FIRE)
+                || source.is(DamageTypes.HOT_FLOOR)
+                || source.is(DamageTypes.ON_FIRE)) {
+            event.setAmount(event.getAmount() * LAVA_DAMAGE_MULTIPLIER);
         }
 
         // Zombie grab — chance to slow the player on a zombie hit.

@@ -8,6 +8,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
@@ -45,6 +46,14 @@ public class WorldEvents {
     private static final int MIN_SPAWN_DISTANCE = 24;
     private static final int MAX_SPAWN_DISTANCE = 48;
 
+    // Meteors at night (Phase 1.12).
+    private static final int    METEOR_CHECK_INTERVAL_TICKS = 200;
+    private static final float  METEOR_PER_CHECK_CHANCE = 0.02F;
+    private static final int    METEOR_HORIZONTAL_OFFSET = 50;
+    private static final int    METEOR_HORIZONTAL_RANGE  = 60; // 50..110 blocks away
+    private static final double METEOR_SPAWN_HEIGHT = 200.0D;
+    private static final int    METEOR_EXPLOSION_POWER = 3;
+
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -76,6 +85,35 @@ public class WorldEvents {
                 }
             }
         }
+
+        // 3. Meteors fall at night (Phase 1.12). Each player has a small chance
+        //    every 10 sec to trigger a meteor that spawns 50–110 blocks away,
+        //    falls from y=200 straight down, and explodes on impact.
+        if (!isDay && level.getGameTime() % METEOR_CHECK_INTERVAL_TICKS == 0L) {
+            for (ServerPlayer player : level.players()) {
+                if (level.random.nextFloat() < METEOR_PER_CHECK_CHANCE) {
+                    spawnMeteorNear(level, player);
+                }
+            }
+        }
+    }
+
+    private static void spawnMeteorNear(ServerLevel level, ServerPlayer player) {
+        RandomSource rand = level.random;
+        double angle = rand.nextDouble() * Math.PI * 2D;
+        int distance = METEOR_HORIZONTAL_OFFSET + rand.nextInt(METEOR_HORIZONTAL_RANGE);
+        double sx = player.getX() + Math.cos(angle) * distance;
+        double sz = player.getZ() + Math.sin(angle) * distance;
+        double sy = METEOR_SPAWN_HEIGHT;
+
+        // Aim straight down with a slight horizontal nudge for visual variety.
+        double tdx = (rand.nextDouble() - 0.5D) * 0.2D;
+        double tdy = -1.0D;
+        double tdz = (rand.nextDouble() - 0.5D) * 0.2D;
+
+        LargeFireball meteor = new LargeFireball(level, player, tdx, tdy, tdz, METEOR_EXPLOSION_POWER);
+        meteor.setPos(sx, sy, sz);
+        level.addFreshEntity(meteor);
     }
 
     private static void trySpawnExtraMonster(ServerLevel level, ServerPlayer player) {
