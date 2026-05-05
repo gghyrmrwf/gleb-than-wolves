@@ -1,6 +1,7 @@
 package com.gghyrmrwf.glebthanwolves;
 
 import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
+import com.gghyrmrwf.glebthanwolves.events.DarkNightEvents;
 import com.gghyrmrwf.glebthanwolves.events.HardcoreEvents;
 import com.gghyrmrwf.glebthanwolves.events.WorldEvents;
 import com.mojang.logging.LogUtils;
@@ -29,6 +30,7 @@ public class GlebThanWolves {
 
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new BushcraftBreakEvents());
+        MinecraftForge.EVENT_BUS.register(new DarkNightEvents());
         MinecraftForge.EVENT_BUS.register(new HardcoreEvents());
         MinecraftForge.EVENT_BUS.register(new WorldEvents());
     }

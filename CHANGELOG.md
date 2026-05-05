@@ -7,7 +7,7 @@ Active PR: https://github.com/gghyrmrwf/gleb-than-wolves/pull/2
 Active branch: `devin/1777925074-phase-1-1-bushcraft`
 
 This changelog covers everything from Phase 0 (empty mod scaffold) through Phase
-1.14 plus the post-1.14 fix pass. All numeric parameters live as named constants
+2.1. All numeric parameters live as named constants
 at the top of the relevant Java file — search by the parameter name in the file
 listed under each phase.
 
@@ -24,6 +24,8 @@ listed under each phase.
   those were fixed in commit `1aeff4c`.
 - Phase 2.0 armor gate was build-verified locally; needs in-game testing for
   recipe removal and both equip paths.
+- Phase 2.1 dark night was build-verified locally; needs in-game testing for
+  visual darkness, no-sleep behavior, and the 5-minute darkness kill.
 - Current recommended local check before sending any jar: `./gradlew build`.
 
 ---
@@ -410,6 +412,40 @@ recipe JSONs in the jar; netherite armor is blocked by the equip gate instead.
 
 ---
 
+## Phase 2.1 — Every 5th night is a dark night
+
+**Files:**
+- `events/DarkNightEvents.java`
+- `client/DarkNightClientEvents.java`
+- `data/glebthanwolves/damage_type/the_darkness.json`
+- `data/minecraft/tags/damage_type/bypasses_armor.json`
+- `data/minecraft/tags/damage_type/bypasses_invulnerability.json`
+- `assets/glebthanwolves/lang/*.json`
+
+**Goal:** every fifth overworld night should feel like a real supernatural
+darkness event, not a vanilla Blindness effect. The moon remains visible, but
+world fog and lightmap are darkened.
+
+**Schedule:** day number is based on `level.getDayTime() / 24000 + 1`, so
+sleep-skipped nights still advance the calendar correctly. Dark nights are days
+5, 10, 15, etc. during `13000..23000`.
+
+**Changes:**
+1. Client-side fog color/distance and lightmap are darkened only on dark nights.
+   No `Blindness`/`Darkness` potion effect is applied.
+2. Sleeping is blocked during a dark night with an actionbar message.
+3. If a survival/adventure player stands in block light ≤ 1, cannot see sky,
+   and remains there for 6000 ticks / 5 minutes during a dark night, the custom
+   `glebthanwolves:the_darkness` damage type kills them.
+4. The death message is localized as a mysterious disappearance:
+   `%1$s disappeared into the dark` / `%1$s исчез во тьме`.
+
+**Important note:** direct moon brightness is handled by leaving the sky render
+intact and darkening the world light/fog, rather than drawing an overlay over
+the whole screen.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
@@ -418,7 +454,7 @@ the mechanic was removed before moving into Phase 2 armor/progression work.
 
 ---
 
-## Files at end of Phase 2.0 armor gate
+## Files at end of Phase 2.1 dark night
 
 ```
 src/main/java/com/gghyrmrwf/glebthanwolves/
@@ -428,8 +464,11 @@ src/main/java/com/gghyrmrwf/glebthanwolves/
 ├── ModLootModifiers.java               (registers GLM codec)
 ├── events/
 │   ├── BushcraftBreakEvents.java       (Phase 1.1: cancel log break)
+│   ├── DarkNightEvents.java            (Phase 2.1: every-5th-night schedule, no sleep, dark-exposure kill)
 │   ├── HardcoreEvents.java             (Phase 1.3+: most mechanics live here, plus Phase 2.0 armor gate)
 │   └── WorldEvents.java                (Phase 1.3, 1.11, 1.12: world-level ticks)
+├── client/
+│   └── DarkNightClientEvents.java      (Phase 2.1: fog/lightmap darkness)
 ├── glm/
 │   ├── AddItemModifier.java            (GLM codec — inject item into loot table)
 │   └── MultiplyItemModifier.java       (GLM codec — multiply existing drop)

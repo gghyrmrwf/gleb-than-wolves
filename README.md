@@ -11,7 +11,7 @@ makes vanilla progression noticeably harder, layered with mechanical-power machi
 
 Phase 1 complete (1.1 → 1.14 + post-1.14 fix). ~30 hardcore-survival mechanics
 implemented on top of vanilla. Phase 2 has started with progression gates for
-vanilla armor.
+vanilla armor and an every-5th-night darkness event.
 
 ## Documentation
 
@@ -30,7 +30,8 @@ Read these in order before extending the mod:
 - **Phase 1.1–1.14**: Hardcore tweaks — bushcraft, hunger, day/night, mob aggro,
   environmental hazards, perception, item rules (done).
 - **Phase 2.0+**: Progression redesign — starts by disabling vanilla iron/gold/
-  diamond armor crafting and blocking non-leather/non-chainmail armor equip.
+  diamond armor crafting and blocking non-leather/non-chainmail armor equip;
+  adds every-5th-night darkness with no sleep and a 5-minute dark-exposure kill.
   See `ROADMAP.md`.
 - **Phase 3.0+**: Other dimensions — Nether and End rebuilt as proper
   progression layers.

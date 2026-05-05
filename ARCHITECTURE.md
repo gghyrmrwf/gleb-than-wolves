@@ -21,8 +21,11 @@ gleb-than-wolves/
 │   │   ├── ModLootModifiers.java               (2) GLM codec registration
 │   │   ├── events/
 │   │   │   ├── BushcraftBreakEvents.java       (3) bushcraft
+│   │   │   ├── DarkNightEvents.java            (3) dark-night server rules
 │   │   │   ├── HardcoreEvents.java             (3) most mechanics
 │   │   │   └── WorldEvents.java                (3) world-tick mechanics
+│   │   ├── client/
+│   │   │   └── DarkNightClientEvents.java      (3) dark-night fog/lightmap
 │   │   ├── glm/
 │   │   │   ├── AddItemModifier.java            (4) generic loot modifier
 │   │   │   └── MultiplyItemModifier.java       (4) generic loot modifier
@@ -106,7 +109,7 @@ For development:
 
 | Event | Phase introduced | Purpose |
 |---|---|---|
-| `TickEvent.PlayerTickEvent` | 1.4 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow |
+| `TickEvent.PlayerTickEvent` | 1.4, 2.1 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow; dark-night exposure timer |
 | `TickEvent.LevelTickEvent` | 1.3 | Day-time ×1.5, night extra spawns, meteors, witches |
 | `LivingEvent.LivingTickEvent` | 1.7 | Iron golem aggro, wolf aggro, ghast extra fireballs |
 | `EntityJoinLevelEvent` | 1.3 | Mob HP/DMG boost, zombie speed boost, husk replace, silent creeper flag, headless creeper, XP orb age, golem player-created reset |
@@ -114,12 +117,14 @@ For development:
 | `LivingEquipmentChangeEvent` | 2.0 | Revert forbidden armor if it reaches a player armor slot |
 | `LivingHurtEvent` | 1.6 | Fall ×1.5, zombie grab, skeleton arrow ×1.5, lava ×1.5, cactus ×2, sweet berries ×3, zombie infection |
 | `PlayerInteractEvent.RightClickItem` | 2.0 | Cancel right-click equip for forbidden armor |
-| `PlayerSleepInBedEvent` | 1.4 | 20% sleep fail |
+| `PlayerSleepInBedEvent` | 1.4, 2.1 | 20% sleep fail; dark-night sleep block |
 | `PlayerWakeUpEvent` | 1.4, 1.13 | Phantom-bump after sleep, awake-tick reset |
 | `PlayerInteractEvent.EntityInteract` | 1.7 | Cancel villager trade |
 | `PlayerEvent.PlayerRespawnEvent` | 1.13 | Death fever, awake-tick reset |
 | `PlayerEvent.Clone` | 1.14 | 50% XP keep on death |
 | `PlayerEvent.BreakSpeed` | 1.1 | Cancel log break with non-axe tool |
+| `ViewportEvent.ComputeFogColor` / `RenderFog` | 2.1 | Client-only dark-night fog |
+| `RegisterDimensionSpecialEffectsEvent` | 2.1 | Client-only overworld lightmap adjustment |
 
 ---
 
@@ -181,7 +186,20 @@ item and return/drop the forbidden item instead.
 The modifier is `Operation.MULTIPLY_TOTAL`, transient (not permanent), so it
 doesn't persist across reloads. See `HardcoreEvents.toggleSpeedModifier`.
 
-### 4. Per-player persistent flags via getPersistentData
+### 6. Dark nights are calendar-based, not sleep-count-based
+
+Phase 2.1 uses `level.getDayTime() / 24000 + 1` to decide whether the current
+night is day 5/10/15/etc. Vanilla sleep advances `dayTime`, so skipped nights
+still count correctly. Keep dark-night schedule logic in
+`DarkNightEvents.isDarkNight`.
+
+### 7. Client visuals must stay client-only
+
+`DarkNightClientEvents` is guarded with `@Mod.EventBusSubscriber(... Dist.CLIENT)`.
+Do not reference `net.minecraft.client.*` classes from common event handlers or
+dedicated servers will crash during class loading.
+
+### 8. Per-player persistent flags via getPersistentData
 
 For state that needs to survive logout (sleep deprivation counter), we write
 to `player.getPersistentData()` (a `CompoundTag` Forge gives every entity).
