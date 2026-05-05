@@ -17,11 +17,17 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -158,6 +164,32 @@ public class HardcoreEvents {
     private static final double ICE_SLIDE_SCALE = 1.02D;
     private static final double ICE_SLIDE_MIN_SPEED = 0.05D;
     private static final double ICE_SLIDE_MAX_SPEED = 0.50D;
+
+    // Predators (Phase 1.11).
+    // Endermen aggro players in 16-block radius without requiring eye contact.
+    private static final double ENDERMAN_AGGRO_RANGE = 16.0D;
+    private static final int    ENDERMAN_RETARGET_INTERVAL_TICKS = 20;
+    // Silent creepers: chance a creeper spawns muted (no fuse hiss / step / hurt sounds).
+    private static final float  SILENT_CREEPER_CHANCE = 0.15F;
+    // Husk replaces zombie 10% of the time (any biome).
+    private static final float  HUSK_REPLACE_CHANCE = 0.10F;
+    // Ghast extra fireball: every N ticks, with chance, fire an additional fireball.
+    private static final int    GHAST_EXTRA_FIRE_INTERVAL_TICKS = 60;
+    private static final float  GHAST_EXTRA_FIRE_CHANCE = 0.60F;
+    // Headless creeper: chance to spawn with bumped explosion radius (3 -> 5).
+    private static final float  HEADLESS_CREEPER_CHANCE = 0.20F;
+    private static final int    HEADLESS_CREEPER_RADIUS = 5;
+    private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
+    static {
+        java.lang.reflect.Field f;
+        try {
+            f = Creeper.class.getDeclaredField("explosionRadius");
+            f.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            f = null;
+        }
+        CREEPER_EXPLOSION_RADIUS = f;
+    }
 
     private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
             Items.BEEF,
@@ -412,6 +444,38 @@ public class HardcoreEvents {
         if (living instanceof IronGolem golem) {
             golem.setPlayerCreated(false);
         }
+
+        // Phase 1.11 — predators.
+
+        // Husk replaces vanilla zombie 10% of the time (any biome).
+        // Only convert plain Zombie (not Husk/Drowned/ZombieVillager subclasses).
+        if (living.getClass() == Zombie.class) {
+            Zombie z = (Zombie) living;
+            if (event.getLevel().getRandom().nextFloat() < HUSK_REPLACE_CHANCE) {
+                event.setCanceled(true);
+                Husk husk = EntityType.HUSK.create(z.level());
+                if (husk != null) {
+                    husk.moveTo(z.getX(), z.getY(), z.getZ(), z.getYRot(), z.getXRot());
+                    z.level().addFreshEntity(husk);
+                }
+                return;
+            }
+        }
+
+        // Silent creeper: 15% chance to spawn fully muted (no fuse hiss either).
+        // Headless creeper: 20% chance to spawn with bumped explosion radius.
+        if (living instanceof Creeper creeper) {
+            if (creeper.level().getRandom().nextFloat() < SILENT_CREEPER_CHANCE) {
+                creeper.setSilent(true);
+            }
+            if (CREEPER_EXPLOSION_RADIUS != null
+                    && creeper.level().getRandom().nextFloat() < HEADLESS_CREEPER_CHANCE) {
+                try {
+                    CREEPER_EXPLOSION_RADIUS.setInt(creeper, HEADLESS_CREEPER_RADIUS);
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+        }
     }
 
     @SubscribeEvent
@@ -448,6 +512,48 @@ public class HardcoreEvents {
             if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
                 wolf.setTarget(nearest);
                 wolf.setIsInterested(true);
+            }
+        }
+
+        // Endermen target the nearest player without requiring eye-contact (Phase 1.11).
+        if (entity instanceof EnderMan enderman) {
+            if (enderman.tickCount % ENDERMAN_RETARGET_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity current = enderman.getTarget();
+            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
+                return;
+            }
+            Player nearest = enderman.level().getNearestPlayer(enderman, ENDERMAN_AGGRO_RANGE);
+            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+                enderman.setTarget(nearest);
+            }
+        }
+
+        // Ghasts shoot extra fireballs (Phase 1.11).
+        if (entity instanceof Ghast ghast) {
+            if (ghast.tickCount % GHAST_EXTRA_FIRE_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity target = ghast.getTarget();
+            if (target == null || !target.isAlive()) {
+                return;
+            }
+            if (ghast.level().getRandom().nextFloat() >= GHAST_EXTRA_FIRE_CHANCE) {
+                return;
+            }
+            Vec3 view = ghast.getViewVector(1.0F);
+            double sx = ghast.getX() + view.x * 4.0D;
+            double sy = ghast.getY(0.5D) + 0.5D;
+            double sz = ghast.getZ() + view.z * 4.0D;
+            double dx = target.getX() - sx;
+            double dy = target.getY(0.5D) - sy;
+            double dz = target.getZ() - sz;
+            LargeFireball fireball = new LargeFireball(ghast.level(), ghast, dx, dy, dz, ghast.getExplosionPower());
+            fireball.setPos(sx, sy, sz);
+            ghast.level().addFreshEntity(fireball);
+            if (!ghast.isSilent()) {
+                ghast.level().levelEvent(null, 1016, ghast.blockPosition(), 0);
             }
         }
     }
