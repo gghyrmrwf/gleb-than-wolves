@@ -7,7 +7,7 @@ human collaborator picking up the project later.
 
 The current author was a Devin AI session working with GitHub user
 `gghyrmrwf`. The session began with an empty repository and reached
-**Phase 2.1 dark night**, with a **post-1.14 fix pass** in response to user
+**Phase 2.0 armor gate**, with a **post-1.14 fix pass** in response to user
 feedback.
 
 ---
@@ -471,30 +471,6 @@ Decision: remove the cave-danger experiment instead of tuning it further.
 
 **User preference added during this phase:** after every mod change, send the
 built jar and a short Russian checklist explaining how to test the new mechanic.
-
-### Phase 2.1 — Every 5th night is darker
-
-**User request:**
-> "сделай механику того что каждую 5 ночь темнее чем обычно, но не обычная
-> слепота а и правда хорошо сделанная темнота в которой хоть чуть чуть но
-> видно, из того что хорошо видно это луну, её должно быть видно отлично, и
-> самое главное если ты будешь стоять в темноте слишком долго(5 минут) то тебя
-> убьёт невидимая сущность(просто килл но с надписью в чате будто игрок умер
-> от чего-то загадочного) также нужно учитывать что игрок до этого спал или
-> нет, чтобы рассчитать правильно день в который будет тёмная ночь, в такую
-> ночь нельзя спать"
-
-**Implemented:**
-1. Added `DarkNightEvents.java` for server-side schedule and player rules.
-2. Dark nights are calculated from `getDayTime() / 24000 + 1`, so sleeping on
-   earlier nights still advances the calendar and does not break the 5th-night
-   rhythm.
-3. Added `DarkNightClientEvents.java` for client fog/lightmap darkness without
-   applying vanilla Blindness/Darkness effects.
-4. Sleep is blocked on dark nights.
-5. Standing in block light ≤ 1 without sky visibility for 5 minutes during a
-   dark night kills the player with `glebthanwolves:the_darkness` and custom
-   localized death messages.
 
 ---
 

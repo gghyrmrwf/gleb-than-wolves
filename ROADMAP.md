@@ -117,18 +117,10 @@ shippable as a PR.
 - Allow only leather and chainmail armor to be worn.
 - Block found/dropped strong armor from being equipped through right-click or
   inventory/equipment changes.
-
-### Phase 2.1 — Every 5th night is a dark night
-
-- Every fifth overworld night (5, 10, 15...) becomes much darker through
-  client fog/lightmap changes, without vanilla Blindness/Darkness effects.
-- Sleep is blocked during that night.
-- Standing in deep darkness for 5 minutes kills the player with a mysterious
-  custom death message.
 - Next: decide whether chainmail stays as early loot armor or becomes a custom
   craft path.
 
-### Phase 2.2 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
+### Phase 2.1 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
 
 - Define `gtw:tier/0..4` tag files.
 - Create `BannedItems` static class + `EntityItemPickupEvent` hook (initially
@@ -137,7 +129,7 @@ shippable as a PR.
 - Result: trading completely broken (the user already wanted this in Phase
   1.7, but now it's enforced via the redesign infrastructure).
 
-### Phase 2.3 — Alternative iron (3-4 PRs)
+### Phase 2.2 — Alternative iron (3-4 PRs)
 
 - Add `gtw:raw_iron`, `gtw:iron_ingot`, plus tools that use them.
 - All vanilla recipes consuming iron → consume `gtw:iron_ingot` instead
@@ -152,7 +144,7 @@ shippable as a PR.
 - Result: iron exists, but the vanilla path is dead. Found loot is
   partially useful.
 
-### Phase 2.4 — Same treatment for every tier (one PR per tier)
+### Phase 2.3 — Same treatment for every tier (one PR per tier)
 
 - Copper (existing vanilla, just tag and gate).
 - Gold (mostly cosmetic; convert vanilla recipes that use gold → GTW gold).
@@ -162,7 +154,7 @@ shippable as a PR.
 Each tier follows the same pattern: new ore, new processing chain, datapack
 recipe overrides, legacy-conversion path.
 
-### Phase 2.5 — Structures and loot tables
+### Phase 2.4 — Structures and loot tables
 
 - Override every vanilla structure loot table to drop GTW versions.
 - Add new structures with rare ingredients:
@@ -170,14 +162,14 @@ recipe overrides, legacy-conversion path.
   - Witch huts — alchemy reagents.
   - Buried bunkers — mid-tier blueprints.
 
-### Phase 2.6 — Selective trading
+### Phase 2.5 — Selective trading
 
 - Re-enable trades, but heavily restricted:
   - Each profession sells exactly 1–2 items.
   - Prices scale with progression difficulty.
   - Wandering Trader sells only flavor items (banners, flowers, dyes).
 
-### Phase 2.7 — Survival systems on top
+### Phase 2.6 — Survival systems on top
 
 - Thirst (Tough as Nails-style, but our own implementation).
 - Body temperature (we already have desert heat / snow cold; extend to a

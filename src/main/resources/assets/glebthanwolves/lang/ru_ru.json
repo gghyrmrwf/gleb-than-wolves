@@ -4,9 +4,5 @@
   "item.glebthanwolves.plant_fiber": "Растительное волокно",
   "item.glebthanwolves.plant_cordage": "Жгут из волокна",
   "item.glebthanwolves.wood_chunk": "Кусок бревна",
-  "item.glebthanwolves.primitive_axe": "Примитивный топор",
-
-  "message.glebthanwolves.darkness_warning": "Что-то смотрит из темноты... %s с",
-  "message.glebthanwolves.dark_night_no_sleep": "Эта ночь не даёт тебе уснуть.",
-  "death.attack.the_darkness": "%1$s исчез во тьме"
+  "item.glebthanwolves.primitive_axe": "Примитивный топор"
 }

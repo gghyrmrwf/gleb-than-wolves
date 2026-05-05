@@ -4,9 +4,5 @@
   "item.glebthanwolves.plant_fiber": "Plant Fiber",
   "item.glebthanwolves.plant_cordage": "Plant Cordage",
   "item.glebthanwolves.wood_chunk": "Wood Chunk",
-  "item.glebthanwolves.primitive_axe": "Primitive Axe",
-
-  "message.glebthanwolves.darkness_warning": "Something is watching from the dark... %s s",
-  "message.glebthanwolves.dark_night_no_sleep": "The night refuses to let you sleep.",
-  "death.attack.the_darkness": "%1$s disappeared into the dark"
+  "item.glebthanwolves.primitive_axe": "Primitive Axe"
 }
