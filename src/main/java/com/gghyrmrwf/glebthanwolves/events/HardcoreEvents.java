@@ -572,10 +572,6 @@ public class HardcoreEvents {
 
     @SubscribeEvent
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        Player player = event.getEntity();
-        if (player.level().isClientSide) {
-            return;
-        }
         if (isForbiddenArmor(event.getItemStack())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
@@ -591,7 +587,12 @@ public class HardcoreEvents {
             return;
         }
         ItemStack forbidden = event.getTo().copy();
-        player.setItemSlot(event.getSlot(), event.getFrom().copy());
+        ItemStack carried = player.containerMenu.getCarried();
+        if (!event.getFrom().isEmpty() && ItemStack.matches(carried, event.getFrom())) {
+            player.setItemSlot(event.getSlot(), ItemStack.EMPTY);
+        } else {
+            player.setItemSlot(event.getSlot(), event.getFrom().copy());
+        }
         if (!player.getInventory().add(forbidden)) {
             player.drop(forbidden, false);
         }
