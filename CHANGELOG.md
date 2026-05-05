@@ -11,6 +11,19 @@ This changelog covers everything from Phase 0 (empty mod scaffold) through Phase
 at the top of the relevant Java file — search by the parameter name in the file
 listed under each phase.
 
+## Testing / verification status
+
+- Phase 0 was verified in the dev client: the mod loaded as
+  `Gleb Than Wolves 1.0.0`.
+- Phase 1.1–1.4 were verified by building `glebthanwolves-1.0.0.jar` and by
+  the manual checklist in PR #2.
+- Phase 1.7 golem hostility was verified in the dev client: a spawned golem
+  targeted and killed the survival player.
+- Phase 1.10–1.14 were packaged into a jar for user playtesting. The user then
+  reported issues with encumbrance, wrong brainstorm items, and desert heat;
+  those were fixed in commit `1aeff4c`.
+- Current recommended local check before sending any jar: `./gradlew build`.
+
 ---
 
 ## Phase 0 — Mod scaffold
@@ -72,7 +85,7 @@ break when held item can't perform `ToolActions.AXE_DIG`. Creative is exempt.
 
 **Goal:** make crafting tables non-trivial.
 
-**File:** `glm/*.json` for log loot tables; `src/main/resources/data/glebthanwolves/recipes/wood_chunk_to_plank.json`
+**File:** `glm/*.json` for log loot tables; `src/main/resources/data/glebthanwolves/recipes/oak_planks_from_chunks.json`
 
 **Changes:**
 - All 8 vanilla log loot tables lose their log drop.
@@ -112,7 +125,7 @@ primitive axe (durability 8 = 8 logs).
 
 1. **Player max HP = 10 (5 hearts).** `MAX_HEALTH -10 ADDITION` permanent
    modifier on every level-join (login / respawn / dimension change). Idempotent
-   via stable UUID `PLAYER_MAX_HEALTH_UUID`.
+   via stable UUID `PLAYER_HP_CAP_UUID`.
 2. **No sprint** (v2 implementation, the chosen one).
    - v1 (rejected): clamp `foodLevel = 6` every tick → broke vanilla regen and
      had client-prediction issues.

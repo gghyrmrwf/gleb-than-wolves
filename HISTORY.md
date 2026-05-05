@@ -5,16 +5,15 @@ user request (verbatim where possible, in Russian), the decisions taken, the
 bugs encountered, and the fixes. Use this as context for any AI agent or
 human collaborator picking up the project later.
 
-The current author was a Devin AI session running on user `gghyrmrwf030`'s
-account. The session began with an empty repository and ended after
-**21 commits**, **5 phase groups (1.10–1.14)** completed and a **post-1.14
-fix pass** in response to user feedback.
+The current author was a Devin AI session working with GitHub user
+`gghyrmrwf`. The session began with an empty repository and reached
+**Phase 1.14**, with a **post-1.14 fix pass** in response to user feedback.
 
 ---
 
 ## Communication style observed
 
-- The user (`gghyrmrwf030`) communicated in **Russian**. All design
+- The user (`gghyrmrwf`) communicated in **Russian**. All design
   decisions, parameters, and feedback were in Russian. Code, commit messages,
   and PR descriptions are in English.
 - The user's iteration style: short directive messages → I deliver → user

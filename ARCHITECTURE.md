@@ -144,14 +144,15 @@ with the same UUID, so re-applying on respawn / dimension change doesn't
 stack. Example:
 
 ```java
-private static final UUID PLAYER_MAX_HEALTH_UUID =
-        UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa00");
+private static final UUID PLAYER_HP_CAP_UUID =
+        UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa03");
 
 AttributeInstance attr = player.getAttribute(Attributes.MAX_HEALTH);
-attr.removeModifier(PLAYER_MAX_HEALTH_UUID);
-attr.addPermanentModifier(new AttributeModifier(
-        PLAYER_MAX_HEALTH_UUID, "GTW HP cap", -10.0,
-        AttributeModifier.Operation.ADDITION));
+if (attr.getModifier(PLAYER_HP_CAP_UUID) == null) {
+    attr.addPermanentModifier(new AttributeModifier(
+            PLAYER_HP_CAP_UUID, "GTW player HP cap", -10.0,
+            AttributeModifier.Operation.ADDITION));
+}
 ```
 
 UUIDs in this codebase follow the pattern `4e3cce71-5872-4f6d-bb29-f31ed6c9faNN`
@@ -266,8 +267,9 @@ state. Damage of `0.5 HP / 30 sec` is visible. After eating cooked food the
 player's foodLevel jumps to 14–20 → vanilla regen fires (1 HP / 4 sec). Now
 small periodic damage gets healed faster than dealt.
 
-The post-1.14 fix bumped desert heat / cold to 2 HP per interval to ensure
-visibility regardless of food state.
+The post-1.14 fix bumped desert heat and snow-biome cold to 2 HP per interval
+to ensure visibility regardless of food state. The older Phase 1.6 rain and
+cold-night drips stayed at 1 HP per interval.
 
 ### LivingHurtEvent fires before armor reduction
 
