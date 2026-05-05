@@ -106,12 +106,14 @@ For development:
 
 | Event | Phase introduced | Purpose |
 |---|---|---|
-| `TickEvent.PlayerTickEvent` | 1.4 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow, cave dread |
-| `TickEvent.LevelTickEvent` | 1.3 | Day-time ×1.5, night extra spawns, meteors, witches, cave ambushes |
+| `TickEvent.PlayerTickEvent` | 1.4 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow |
+| `TickEvent.LevelTickEvent` | 1.3 | Day-time ×1.5, night extra spawns, meteors, witches |
 | `LivingEvent.LivingTickEvent` | 1.7 | Iron golem aggro, wolf aggro, ghast extra fireballs |
 | `EntityJoinLevelEvent` | 1.3 | Mob HP/DMG boost, zombie speed boost, husk replace, silent creeper flag, headless creeper, XP orb age, golem player-created reset |
 | `LivingEntityUseItemEvent.Finish` | 1.3 | Raw food → Hunger + damage, golden apple effect strip |
+| `LivingEquipmentChangeEvent` | 2.0 | Revert forbidden armor if it reaches a player armor slot |
 | `LivingHurtEvent` | 1.6 | Fall ×1.5, zombie grab, skeleton arrow ×1.5, lava ×1.5, cactus ×2, sweet berries ×3, zombie infection |
+| `PlayerInteractEvent.RightClickItem` | 2.0 | Cancel right-click equip for forbidden armor |
 | `PlayerSleepInBedEvent` | 1.4 | 20% sleep fail |
 | `PlayerWakeUpEvent` | 1.4, 1.13 | Phantom-bump after sleep, awake-tick reset |
 | `PlayerInteractEvent.EntityInteract` | 1.7 | Cancel villager trade |
@@ -162,6 +164,20 @@ where `NN` is incremented for each modifier. Keeps them visually distinct.
 
 For "active while X is true" buffs (sneak slow, snow slow), we use a helper
 that adds the modifier when the condition is true and removes it when false.
+
+### 4. Vanilla recipe disabling uses datapack overrides
+
+To disable vanilla recipes, add a same-path JSON under
+`src/main/resources/data/minecraft/recipes/` with `forge:conditions` containing
+`forge:false`. Forge skips the recipe during load. Phase 2.0 uses this for
+iron/gold/diamond armor recipes.
+
+### 5. Equip gates need both pre-check and rollback
+
+Right-click armor equip is cancellable via `PlayerInteractEvent.RightClickItem`.
+Inventory clicks and other equip paths are safer to catch with
+`LivingEquipmentChangeEvent`, which is not cancellable; restore the old slot
+item and return/drop the forbidden item instead.
 The modifier is `Operation.MULTIPLY_TOTAL`, transient (not permanent), so it
 doesn't persist across reloads. See `HardcoreEvents.toggleSpeedModifier`.
 

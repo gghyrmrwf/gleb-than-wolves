@@ -62,19 +62,6 @@ public class WorldEvents {
     private static final int   WITCH_MIN_DISTANCE = 30;
     private static final int   WITCH_MAX_DISTANCE = 64;
 
-    // Cave ambushes (Phase 1.15): rare monster pressure in deep, unlit caves.
-    private static final List<EntityType<? extends Mob>> CAVE_AMBUSH_MOBS = List.of(
-            EntityType.ZOMBIE,
-            EntityType.SKELETON,
-            EntityType.SPIDER
-    );
-    private static final int   CAVE_AMBUSH_CHECK_INTERVAL_TICKS = 600;
-    private static final float CAVE_AMBUSH_CHANCE = 0.20F;
-    private static final int   CAVE_AMBUSH_MAX_Y = 40;
-    private static final int   CAVE_AMBUSH_MIN_DISTANCE = 8;
-    private static final int   CAVE_AMBUSH_MAX_DISTANCE = 18;
-    private static final int   CAVE_AMBUSH_TRIES = 12;
-
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -129,22 +116,6 @@ public class WorldEvents {
             }
         }
 
-        if (level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)
-                && level.getGameTime() % CAVE_AMBUSH_CHECK_INTERVAL_TICKS == 0L) {
-            for (ServerPlayer player : level.players()) {
-                if (isPlayerInDeepDarkCave(level, player)
-                        && level.random.nextFloat() < CAVE_AMBUSH_CHANCE) {
-                    trySpawnCaveAmbush(level, player);
-                }
-            }
-        }
-    }
-
-    private static boolean isPlayerInDeepDarkCave(ServerLevel level, ServerPlayer player) {
-        BlockPos pos = player.blockPosition();
-        return pos.getY() <= CAVE_AMBUSH_MAX_Y
-                && !level.canSeeSky(pos)
-                && level.getBrightness(LightLayer.BLOCK, pos) <= 7;
     }
 
     private static void trySpawnWitch(ServerLevel level, ServerPlayer player) {
@@ -246,46 +217,4 @@ public class WorldEvents {
         level.addFreshEntity(mob);
     }
 
-    private static void trySpawnCaveAmbush(ServerLevel level, ServerPlayer player) {
-        RandomSource rand = level.random;
-        BlockPos origin = player.blockPosition();
-
-        for (int i = 0; i < CAVE_AMBUSH_TRIES; i++) {
-            double angle = rand.nextDouble() * Math.PI * 2D;
-            int distance = CAVE_AMBUSH_MIN_DISTANCE
-                    + rand.nextInt(CAVE_AMBUSH_MAX_DISTANCE - CAVE_AMBUSH_MIN_DISTANCE + 1);
-            int x = origin.getX() + (int) Math.round(Math.cos(angle) * distance);
-            int y = origin.getY() + rand.nextInt(9) - 4;
-            int z = origin.getZ() + (int) Math.round(Math.sin(angle) * distance);
-            BlockPos spawnPos = new BlockPos(x, y, z);
-
-            if (!level.hasChunkAt(spawnPos)
-                    || level.canSeeSky(spawnPos)
-                    || level.getBrightness(LightLayer.BLOCK, spawnPos) > 7
-                    || !level.getBlockState(spawnPos).isAir()
-                    || !level.getBlockState(spawnPos.above()).isAir()) {
-                continue;
-            }
-            BlockPos belowPos = spawnPos.below();
-            if (!level.getBlockState(belowPos).isFaceSturdy(level, belowPos, Direction.UP)) {
-                continue;
-            }
-
-            EntityType<? extends Mob> type = CAVE_AMBUSH_MOBS.get(rand.nextInt(CAVE_AMBUSH_MOBS.size()));
-            Mob mob = type.create(level);
-            if (mob == null) {
-                return;
-            }
-            mob.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
-                    rand.nextFloat() * 360F, 0F);
-            if (!mob.checkSpawnRules(level, MobSpawnType.NATURAL) || !mob.checkSpawnObstruction(level)) {
-                mob.discard();
-                continue;
-            }
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
-                    MobSpawnType.NATURAL, null, null);
-            level.addFreshEntity(mob);
-            return;
-        }
-    }
 }

@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -33,6 +34,8 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -48,6 +51,7 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -232,11 +236,6 @@ public class HardcoreEvents {
     private static final float  CACTUS_DAMAGE_MULTIPLIER = 2.0F;
     private static final float  SWEET_BERRY_DAMAGE_MULTIPLIER = 3.0F;
 
-    // Caves are oppressive in total darkness (Phase 1.15).
-    private static final int    CAVE_DREAD_MAX_Y = 50;
-    private static final int    CAVE_DREAD_MAX_BLOCK_LIGHT = 1;
-    private static final int    CAVE_DREAD_REFRESH_INTERVAL_TICKS = 100;
-    private static final int    CAVE_DREAD_EFFECT_DURATION_TICKS = 140;
     private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
     private static final java.lang.reflect.Field XP_ORB_AGE;
     static {
@@ -268,6 +267,17 @@ public class HardcoreEvents {
             Items.COD,
             Items.SALMON,
             Items.TROPICAL_FISH
+    );
+
+    private static final Set<Item> ALLOWED_ARMOR = Set.of(
+            Items.LEATHER_HELMET,
+            Items.LEATHER_CHESTPLATE,
+            Items.LEATHER_LEGGINGS,
+            Items.LEATHER_BOOTS,
+            Items.CHAINMAIL_HELMET,
+            Items.CHAINMAIL_CHESTPLATE,
+            Items.CHAINMAIL_LEGGINGS,
+            Items.CHAINMAIL_BOOTS
     );
 
     @SubscribeEvent
@@ -463,29 +473,11 @@ public class HardcoreEvents {
             }
         }
 
-        // Phase 1.15 — deep unlit caves periodically blur vision and weaken the player.
-        if (player.tickCount % CAVE_DREAD_REFRESH_INTERVAL_TICKS == 0
-                && isDeepUnlitCave(level, pos)) {
-            player.addEffect(new MobEffectInstance(
-                    MobEffects.DARKNESS,
-                    CAVE_DREAD_EFFECT_DURATION_TICKS, 0,
-                    false, false, true));
-            player.addEffect(new MobEffectInstance(
-                    MobEffects.WEAKNESS,
-                    CAVE_DREAD_EFFECT_DURATION_TICKS, 0,
-                    false, false, true));
-        }
     }
 
     private static boolean isMidday(Level level) {
         long t = level.getDayTime() % 24000L;
         return t >= MIDDAY_START && t <= MIDDAY_END;
-    }
-
-    private static boolean isDeepUnlitCave(Level level, BlockPos pos) {
-        return pos.getY() <= CAVE_DREAD_MAX_Y
-                && !level.canSeeSky(pos)
-                && level.getBrightness(LightLayer.BLOCK, pos) <= CAVE_DREAD_MAX_BLOCK_LIGHT;
     }
 
     private static void toggleSpeedModifier(Player player, UUID uuid, String name, double delta, boolean active) {
@@ -576,6 +568,45 @@ public class HardcoreEvents {
     private static boolean isNightTime(Level level) {
         long t = level.getDayTime() % 24000L;
         return t >= 13000L && t <= 23000L;
+    }
+
+    @SubscribeEvent
+    public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        Player player = event.getEntity();
+        if (player.level().isClientSide) {
+            return;
+        }
+        if (isForbiddenArmor(event.getItemStack())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (!event.getSlot().isArmor() || !isForbiddenArmor(event.getTo())) {
+            return;
+        }
+        ItemStack forbidden = event.getTo().copy();
+        player.setItemSlot(event.getSlot(), event.getFrom().copy());
+        if (!player.getInventory().add(forbidden)) {
+            player.drop(forbidden, false);
+        }
+    }
+
+    private static boolean isForbiddenArmor(ItemStack stack) {
+        if (!(stack.getItem() instanceof ArmorItem armor)) {
+            return false;
+        }
+        if (!armor.getEquipmentSlot().isArmor()) {
+            return false;
+        }
+        return !ALLOWED_ARMOR.contains(stack.getItem())
+                && armor.getMaterial() != ArmorMaterials.LEATHER
+                && armor.getMaterial() != ArmorMaterials.CHAIN;
     }
 
     @SubscribeEvent

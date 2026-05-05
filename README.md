@@ -9,9 +9,9 @@ makes vanilla progression noticeably harder, layered with mechanical-power machi
 
 ## Status
 
-Phase 1 complete (1.1 → 1.15 + post-1.14 fix). ~30 hardcore-survival mechanics
-implemented on top of vanilla. Phase 2 (full progression redesign) is planned
-but not started.
+Phase 1 complete (1.1 → 1.14 + post-1.14 fix). ~30 hardcore-survival mechanics
+implemented on top of vanilla. Phase 2 has started with progression gates for
+vanilla armor.
 
 ## Documentation
 
@@ -27,10 +27,11 @@ Read these in order before extending the mod:
 ## Roadmap (high-level)
 
 - **Phase 0**: Forge MDK scaffold (done).
-- **Phase 1.1–1.15**: Hardcore tweaks — bushcraft, hunger, day/night, mob aggro,
+- **Phase 1.1–1.14**: Hardcore tweaks — bushcraft, hunger, day/night, mob aggro,
   environmental hazards, perception, item rules (done).
-- **Phase 2.0+**: Progression redesign — custom item tiers, bloomery, hammer,
-  alternative iron path, restricted trading. See `ROADMAP.md`.
+- **Phase 2.0+**: Progression redesign — starts by disabling vanilla iron/gold/
+  diamond armor crafting and blocking non-leather/non-chainmail armor equip.
+  See `ROADMAP.md`.
 - **Phase 3.0+**: Other dimensions — Nether and End rebuilt as proper
   progression layers.
 

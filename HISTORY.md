@@ -7,7 +7,8 @@ human collaborator picking up the project later.
 
 The current author was a Devin AI session working with GitHub user
 `gghyrmrwf`. The session began with an empty repository and reached
-**Phase 1.15**, with a **post-1.14 fix pass** in response to user feedback.
+**Phase 2.0 armor gate**, with a **post-1.14 fix pass** in response to user
+feedback.
 
 ---
 
@@ -432,32 +433,44 @@ all my requests and how we communicated, for full understanding.)
 
 ---
 
-### Phase 1.15 — Caves are more dangerous
+### Phase 1.15 cave danger experiment, then removal
 
-**User question:**
+**User asked:**
 > "думаешь стоит ещё что-то добавить в обычный мир?"
 
-**My recommendation:** avoid bloating Phase 1 too much; if adding anything,
-add one small thematic packet, then move to Phase 2 progression redesign.
+I suggested several possible mini-packs and the user selected "Пещеры опаснее".
+I implemented a small experiment: deep unlit caves applied Darkness/Weakness
+and rare cave ambushes could spawn nearby.
 
-I offered several mini-packs:
-- caves more dangerous;
-- loot/losses harsher;
-- water more dangerous;
-- injuries;
-- bed less reliable.
+**User feedback:**
+> "не уверен что работает, но и ладно, не особо нужна такая механика..."
 
-**User picked:** "Пещеры опаснее".
+Decision: remove the cave-danger experiment instead of tuning it further.
+
+### Phase 2.0 — Armor gate
+
+**User request:**
+> "давай лучше будем думать как начать делать свои предметы и крафты чтобы всё
+> шло по моей задумке. думаю надо начать с того что ты запретишь крафты брони,
+> кроме кожаной и кольчуги, а если вдруг игрок найдёт другую броню или выбьет
+> её, то её нельзя будет надеть и через инвентарь и взяв в руки нажав правую
+> кнопку мыши"
 
 **Implemented:**
-1. Deep unlit cave dread: at y≤50, no sky, block light ≤1, every 100 ticks
-   apply Darkness I + Weakness I for 140 ticks.
-2. Rare cave ambushes: at y≤40, no sky, block light ≤7, every 600 ticks roll
-   20%; if successful, try to spawn zombie/skeleton/spider 8–18 blocks away
-   using vanilla spawn rules.
+1. Removed the Phase 1.15 cave mechanics from `HardcoreEvents.java` and
+   `WorldEvents.java`.
+2. Added datapack overrides under `data/minecraft/recipes/` to disable
+   iron/gold/diamond armor crafting recipes with `forge:false`.
+3. Added an armor gate in `HardcoreEvents.java`:
+   - leather and chainmail armor are allowed;
+   - iron/gold/diamond/netherite/turtle and other non-leather/non-chainmail
+     armor are forbidden;
+   - right-click equip is cancelled;
+   - if forbidden armor reaches an armor slot by inventory/equipment change,
+     it is removed and returned to inventory or dropped if inventory is full.
 
-**Design decision:** torches should be the clear counterplay. The mechanics
-target deep, dark caves only, not every underground space.
+**User preference added during this phase:** after every mod change, send the
+built jar and a short Russian checklist explaining how to test the new mechanic.
 
 ---
 
