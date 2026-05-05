@@ -22,7 +22,6 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.monster.Husk;
@@ -159,8 +158,10 @@ public class HardcoreEvents {
     // Snow / powder snow slow: -25% via MULTIPLY_TOTAL on MOVEMENT_SPEED.
     private static final UUID   SNOW_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa11");
     private static final double SNOW_SPEED_DELTA = -0.25D;
-    // Encumbrance: ≥ this many filled inventory slots → Slowness I + Mining Fatigue I.
-    private static final int    ENCUMBRANCE_FILL_THRESHOLD = 27;
+    // Encumbrance: ≥ this many filled inventory slots (= "stacks") → Slowness I + Mining Fatigue I.
+    // Counts every non-empty slot, so splitting a stack doesn't help: 64 cobble in one slot
+    // counts as 1, but 32+32 in two slots counts as 2.
+    private static final int    ENCUMBRANCE_FILL_THRESHOLD = 10;
     private static final int    ENCUMBRANCE_REFRESH_INTERVAL_TICKS = 40;
     private static final int    ENCUMBRANCE_EFFECT_DURATION_TICKS = 60;
     // Swim slow: scale horizontal velocity in water each tick. 0.85 → ~ -30% sustained.
@@ -173,9 +174,6 @@ public class HardcoreEvents {
     private static final double ICE_SLIDE_MAX_SPEED = 0.50D;
 
     // Predators (Phase 1.11).
-    // Endermen aggro players in 16-block radius without requiring eye contact.
-    private static final double ENDERMAN_AGGRO_RANGE = 16.0D;
-    private static final int    ENDERMAN_RETARGET_INTERVAL_TICKS = 20;
     // Silent creepers: chance a creeper spawns muted (no fuse hiss / step / hurt sounds).
     private static final float  SILENT_CREEPER_CHANCE = 0.15F;
     // Husk replaces zombie 10% of the time (any biome).
@@ -192,23 +190,22 @@ public class HardcoreEvents {
     private static final int    LIGHTNING_CHECK_INTERVAL_TICKS = 400;
     private static final float  LIGHTNING_STRIKE_CHANCE = 0.05F;
     private static final int    LIGHTNING_OFFSET_RANGE = 3; // strike within ±3 blocks
-    // Desert heat at midday: -0.5 HP every 15 sec if no helmet, in DESERT biome around noon.
-    private static final int    DESERT_HEAT_INTERVAL_TICKS = 300;
-    private static final float  DESERT_HEAT_DAMAGE = 1.0F;
+    // Desert heat at midday: damages player if no helmet in DESERT biome around noon.
+    // Bumped to 1 heart per 8 sec so it overcomes our slow-regen of 1 HP / 4 sec.
+    private static final int    DESERT_HEAT_INTERVAL_TICKS = 160; // 8 sec
+    private static final float  DESERT_HEAT_DAMAGE = 2.0F; // 1 heart
     private static final long   MIDDAY_START = 5000L;
     private static final long   MIDDAY_END   = 7000L;
-    // Snow biome cold during day: -0.5 HP every 60 sec if no chest armor, in cold biome.
-    private static final int    SNOW_COLD_INTERVAL_TICKS = 1200;
-    private static final float  SNOW_COLD_DAMAGE = 1.0F;
+    // Snow biome cold during day: damages player if no chest armor in cold biome.
+    // Bumped similarly so the damage actually shows through slow-regen.
+    private static final int    SNOW_COLD_INTERVAL_TICKS = 600; // 30 sec
+    private static final float  SNOW_COLD_DAMAGE = 2.0F; // 1 heart
     // Lava more aggressive: hit damage multiplier and minimum on-fire ticks.
     private static final float  LAVA_DAMAGE_MULTIPLIER = 1.5F;
     private static final int    LAVA_FIRE_MIN_TICKS = 200; // 10 sec
     // Note: meteors at night are spawned from WorldEvents.onLevelTick.
 
     // Perception & physiology (Phase 1.13).
-    // Rain fog: while in rain under open sky, refresh short Blindness pulses.
-    private static final int    RAIN_FOG_REFRESH_INTERVAL_TICKS = 20;
-    private static final int    RAIN_FOG_DURATION_TICKS = 40;
     // Zombie infection: 15% chance of Hunger II for 5 minutes on zombie hit.
     private static final float  ZOMBIE_INFECTION_CHANCE = 0.15F;
     private static final int    ZOMBIE_INFECTION_DURATION_TICKS = 6000; // 5 min
@@ -402,21 +399,27 @@ public class HardcoreEvents {
             }
         }
 
-        // Desert heat at midday: damages player if no helmet in DESERT biome around noon.
+        // Desert heat at midday: damages player if no helmet in any hot biome around noon.
+        // Use base temperature ≥ 1.5 to cover desert, badlands family, and savannas
+        // (anything tagged "hot" in vanilla).
         if (player.tickCount % DESERT_HEAT_INTERVAL_TICKS == 0
                 && isMidday(level)
                 && player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()
-                && level.getBiome(pos).is(Biomes.DESERT)) {
-            player.hurt(player.damageSources().generic(), DESERT_HEAT_DAMAGE);
+                && level.canSeeSky(pos)
+                && level.getBiome(pos).value().getBaseTemperature() >= 1.5F) {
+            // inFire damage source shows fire icon in death screen so player gets
+            // clear feedback that this is a heat hit.
+            player.hurt(player.damageSources().inFire(), DESERT_HEAT_DAMAGE);
         }
 
         // Snow biome cold during day: damages player if no chest armor in cold biome.
         if (player.tickCount % SNOW_COLD_INTERVAL_TICKS == 0
                 && !isNightTime(level)
-                && player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()) {
+                && player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()
+                && level.canSeeSky(pos)) {
             Biome biome = level.getBiome(pos).value();
             if (biome.coldEnoughToSnow(pos)) {
-                player.hurt(player.damageSources().generic(), SNOW_COLD_DAMAGE);
+                player.hurt(player.damageSources().freeze(), SNOW_COLD_DAMAGE);
             }
         }
 
@@ -426,15 +429,6 @@ public class HardcoreEvents {
         }
 
         // Phase 1.13 — perception & physiology.
-
-        // Rain fog: short Blindness pulses while standing in rain under open sky.
-        if (player.tickCount % RAIN_FOG_REFRESH_INTERVAL_TICKS == 0
-                && level.isRainingAt(pos.above())) {
-            player.addEffect(new MobEffectInstance(
-                    MobEffects.BLINDNESS,
-                    RAIN_FOG_DURATION_TICKS, 0,
-                    false, false, true));
-        }
 
         // Sleep deprivation: track ticks awake and apply Slowness I + Weakness I past threshold.
         long awake = player.getPersistentData().getLong(AWAKE_TICKS_TAG) + 1L;
@@ -701,21 +695,6 @@ public class HardcoreEvents {
             if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
                 wolf.setTarget(nearest);
                 wolf.setIsInterested(true);
-            }
-        }
-
-        // Endermen target the nearest player without requiring eye-contact (Phase 1.11).
-        if (entity instanceof EnderMan enderman) {
-            if (enderman.tickCount % ENDERMAN_RETARGET_INTERVAL_TICKS != 0) {
-                return;
-            }
-            LivingEntity current = enderman.getTarget();
-            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
-                return;
-            }
-            Player nearest = enderman.level().getNearestPlayer(enderman, ENDERMAN_AGGRO_RANGE);
-            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
-                enderman.setTarget(nearest);
             }
         }
 

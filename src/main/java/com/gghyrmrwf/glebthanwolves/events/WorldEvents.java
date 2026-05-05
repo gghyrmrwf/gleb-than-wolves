@@ -54,6 +54,14 @@ public class WorldEvents {
     private static final double METEOR_SPAWN_HEIGHT = 200.0D;
     private static final int    METEOR_EXPLOSION_POWER = 3;
 
+    // Witches spawn anywhere, not just huts (Phase 1.11 #10).
+    // Per-player every 30 minutes (36000 ticks), 50% chance to attempt a witch spawn
+    // 30..64 blocks away on a valid surface block (any biome, any time of day).
+    private static final int   WITCH_CHECK_INTERVAL_TICKS = 36000;
+    private static final float WITCH_SPAWN_CHANCE = 0.50F;
+    private static final int   WITCH_MIN_DISTANCE = 30;
+    private static final int   WITCH_MAX_DISTANCE = 64;
+
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -96,6 +104,52 @@ public class WorldEvents {
                 }
             }
         }
+
+        // 4. Witches spawn anywhere, every 30 min per player (Phase 1.11 #10).
+        if (level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)
+                && level.getGameTime() % WITCH_CHECK_INTERVAL_TICKS == 0L
+                && level.getGameTime() > 0L) {
+            for (ServerPlayer player : level.players()) {
+                if (level.random.nextFloat() < WITCH_SPAWN_CHANCE) {
+                    trySpawnWitch(level, player);
+                }
+            }
+        }
+    }
+
+    private static void trySpawnWitch(ServerLevel level, ServerPlayer player) {
+        RandomSource rand = level.random;
+        double angle = rand.nextDouble() * Math.PI * 2D;
+        int distance = WITCH_MIN_DISTANCE + rand.nextInt(WITCH_MAX_DISTANCE - WITCH_MIN_DISTANCE + 1);
+        int x = player.blockPosition().getX() + (int) Math.round(Math.cos(angle) * distance);
+        int z = player.blockPosition().getZ() + (int) Math.round(Math.sin(angle) * distance);
+
+        BlockPos columnPos = new BlockPos(x, 0, z);
+        if (!level.hasChunkAt(columnPos)) {
+            return;
+        }
+
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos spawnPos = new BlockPos(x, y, z);
+
+        if (!level.getBlockState(spawnPos).isAir()
+                || !level.getBlockState(spawnPos.above()).isAir()) {
+            return;
+        }
+        BlockPos belowPos = spawnPos.below();
+        if (!level.getBlockState(belowPos).isFaceSturdy(level, belowPos, Direction.UP)) {
+            return;
+        }
+
+        Mob witch = EntityType.WITCH.create(level);
+        if (witch == null) {
+            return;
+        }
+        witch.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
+                rand.nextFloat() * 360F, 0F);
+        witch.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+                MobSpawnType.NATURAL, null, null);
+        level.addFreshEntity(witch);
     }
 
     private static void spawnMeteorNear(ServerLevel level, ServerPlayer player) {
