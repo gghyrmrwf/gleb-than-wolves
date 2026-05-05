@@ -106,8 +106,8 @@ For development:
 
 | Event | Phase introduced | Purpose |
 |---|---|---|
-| `TickEvent.PlayerTickEvent` | 1.4 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow |
-| `TickEvent.LevelTickEvent` | 1.3 | Day-time ×1.5, night extra spawns, meteors, witches |
+| `TickEvent.PlayerTickEvent` | 1.4 | Hunger drain, movement scaling, swim/climb scaling, encumbrance, rain damage, cold damage, lava-on-fire, sleep deprivation, swamp slow, cave dread |
+| `TickEvent.LevelTickEvent` | 1.3 | Day-time ×1.5, night extra spawns, meteors, witches, cave ambushes |
 | `LivingEvent.LivingTickEvent` | 1.7 | Iron golem aggro, wolf aggro, ghast extra fireballs |
 | `EntityJoinLevelEvent` | 1.3 | Mob HP/DMG boost, zombie speed boost, husk replace, silent creeper flag, headless creeper, XP orb age, golem player-created reset |
 | `LivingEntityUseItemEvent.Finish` | 1.3 | Raw food → Hunger + damage, golden apple effect strip |

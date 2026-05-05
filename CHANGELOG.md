@@ -7,7 +7,7 @@ Active PR: https://github.com/gghyrmrwf/gleb-than-wolves/pull/2
 Active branch: `devin/1777925074-phase-1-1-bushcraft`
 
 This changelog covers everything from Phase 0 (empty mod scaffold) through Phase
-1.14 plus the post-1.14 fix pass. All numeric parameters live as named constants
+1.15 plus the post-1.14 fix pass. All numeric parameters live as named constants
 at the top of the relevant Java file — search by the parameter name in the file
 listed under each phase.
 
@@ -22,6 +22,8 @@ listed under each phase.
 - Phase 1.10–1.14 were packaged into a jar for user playtesting. The user then
   reported issues with encumbrance, wrong brainstorm items, and desert heat;
   those were fixed in commit `1aeff4c`.
+- Phase 1.15 is compile/build-verified locally; in-game tuning still needs
+  survival playtesting in deep caves.
 - Current recommended local check before sending any jar: `./gradlew build`.
 
 ---
@@ -377,7 +379,34 @@ User feedback after Phase 1.14:
 
 ---
 
-## Files at end of Phase 1.14 + fix
+## Phase 1.15 — Caves are more dangerous
+
+**Files:** `events/HardcoreEvents.java`, `events/WorldEvents.java`
+
+User picked "Пещеры опаснее" from a proposed set of possible overworld
+mini-packs. Implemented as lightweight Forge-event pressure, with no new
+blocks/items.
+
+1. **Deep cave dread.** Player tick: when the player is below/equal y=50,
+   cannot see sky, and block light is ≤1, every 100 ticks apply:
+   - Darkness I for 140 ticks.
+   - Weakness I for 140 ticks.
+   A torch or other light source above light 1 suppresses it.
+2. **Rare cave ambushes.** Level tick: every 600 ticks (30 sec), per player
+   who is below/equal y=40, cannot see sky, and block light is ≤7, roll 20%.
+   On success, try up to 12 nearby spawn positions 8–18 blocks away and
+   ±4 blocks vertically. Candidate mobs: zombie, skeleton, spider. Vanilla
+   spawn rules and obstruction checks still apply, so invalid spots fail
+   silently. Respects `doMobSpawning`.
+
+**Design intent:** caves become more oppressive if the player pushes deep
+without lighting the area, while torches remain a clear counterplay. Ambushes
+are rare enough not to replace vanilla spawns, but frequent enough to make
+long mining trips unsafe.
+
+---
+
+## Files at end of Phase 1.15
 
 ```
 src/main/java/com/gghyrmrwf/glebthanwolves/
@@ -388,7 +417,7 @@ src/main/java/com/gghyrmrwf/glebthanwolves/
 ├── events/
 │   ├── BushcraftBreakEvents.java       (Phase 1.1: cancel log break)
 │   ├── HardcoreEvents.java             (Phase 1.3+: most mechanics live here)
-│   └── WorldEvents.java                (Phase 1.3, 1.11, 1.12: world-level ticks)
+│   └── WorldEvents.java                (Phase 1.3, 1.11, 1.12, 1.15: world-level ticks)
 ├── glm/
 │   ├── AddItemModifier.java            (GLM codec — inject item into loot table)
 │   └── MultiplyItemModifier.java       (GLM codec — multiply existing drop)

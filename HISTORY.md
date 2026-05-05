@@ -7,7 +7,7 @@ human collaborator picking up the project later.
 
 The current author was a Devin AI session working with GitHub user
 `gghyrmrwf`. The session began with an empty repository and reached
-**Phase 1.14**, with a **post-1.14 fix pass** in response to user feedback.
+**Phase 1.15**, with a **post-1.14 fix pass** in response to user feedback.
 
 ---
 
@@ -429,6 +429,35 @@ all my requests and how we communicated, for full understanding.)
 - `ROADMAP.md` — Phase 2.0+ design, principles, status of all 44 brainstorm
   items.
 - `HISTORY.md` — this file.
+
+---
+
+### Phase 1.15 — Caves are more dangerous
+
+**User question:**
+> "думаешь стоит ещё что-то добавить в обычный мир?"
+
+**My recommendation:** avoid bloating Phase 1 too much; if adding anything,
+add one small thematic packet, then move to Phase 2 progression redesign.
+
+I offered several mini-packs:
+- caves more dangerous;
+- loot/losses harsher;
+- water more dangerous;
+- injuries;
+- bed less reliable.
+
+**User picked:** "Пещеры опаснее".
+
+**Implemented:**
+1. Deep unlit cave dread: at y≤50, no sky, block light ≤1, every 100 ticks
+   apply Darkness I + Weakness I for 140 ticks.
+2. Rare cave ambushes: at y≤40, no sky, block light ≤7, every 600 ticks roll
+   20%; if successful, try to spawn zombie/skeleton/spider 8–18 blocks away
+   using vanilla spawn rules.
+
+**Design decision:** torches should be the clear counterplay. The mechanics
+target deep, dark caves only, not every underground space.
 
 ---
 

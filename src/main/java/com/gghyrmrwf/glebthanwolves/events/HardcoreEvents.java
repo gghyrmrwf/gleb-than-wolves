@@ -231,6 +231,12 @@ public class HardcoreEvents {
     // Hostile flora multipliers.
     private static final float  CACTUS_DAMAGE_MULTIPLIER = 2.0F;
     private static final float  SWEET_BERRY_DAMAGE_MULTIPLIER = 3.0F;
+
+    // Caves are oppressive in total darkness (Phase 1.15).
+    private static final int    CAVE_DREAD_MAX_Y = 50;
+    private static final int    CAVE_DREAD_MAX_BLOCK_LIGHT = 1;
+    private static final int    CAVE_DREAD_REFRESH_INTERVAL_TICKS = 100;
+    private static final int    CAVE_DREAD_EFFECT_DURATION_TICKS = 140;
     private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
     private static final java.lang.reflect.Field XP_ORB_AGE;
     static {
@@ -456,11 +462,30 @@ public class HardcoreEvents {
                         false, false, true));
             }
         }
+
+        // Phase 1.15 — deep unlit caves periodically blur vision and weaken the player.
+        if (player.tickCount % CAVE_DREAD_REFRESH_INTERVAL_TICKS == 0
+                && isDeepUnlitCave(level, pos)) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.DARKNESS,
+                    CAVE_DREAD_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.WEAKNESS,
+                    CAVE_DREAD_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+        }
     }
 
     private static boolean isMidday(Level level) {
         long t = level.getDayTime() % 24000L;
         return t >= MIDDAY_START && t <= MIDDAY_END;
+    }
+
+    private static boolean isDeepUnlitCave(Level level, BlockPos pos) {
+        return pos.getY() <= CAVE_DREAD_MAX_Y
+                && !level.canSeeSky(pos)
+                && level.getBrightness(LightLayer.BLOCK, pos) <= CAVE_DREAD_MAX_BLOCK_LIGHT;
     }
 
     private static void toggleSpeedModifier(Player player, UUID uuid, String name, double delta, boolean active) {

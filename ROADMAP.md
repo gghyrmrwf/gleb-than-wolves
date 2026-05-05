@@ -1,7 +1,8 @@
 # Roadmap — Phase 2.0 and beyond
 
 This document captures the long-term plan for the mod. Phase 1.x finished a
-*hardcore tweaks* layer (~30 mechanics) on top of vanilla. Phase 2.x is the
+*hardcore tweaks* layer (~30 mechanics) on top of vanilla, ending with a
+small Phase 1.15 cave-danger pass. Phase 2.x is the
 real ambition: **redesigning Minecraft's progression**.
 
 The user's stated goal:
