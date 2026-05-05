@@ -434,15 +434,15 @@ sleep-skipped nights still advance the calendar correctly. Dark nights are days
 1. Client-side fog color/distance and lightmap are darkened only on dark nights.
    No `Blindness`/`Darkness` potion effect is applied.
 2. Sleeping is blocked during a dark night with an actionbar message.
-3. If a survival/adventure player stands in block light ≤ 1, cannot see sky,
+3. If a survival/adventure player stands in block light < 4,
    and remains there for 6000 ticks / 5 minutes during a dark night, the custom
    `glebthanwolves:the_darkness` damage type kills them.
 4. The death message is localized as a mysterious disappearance:
    `%1$s disappeared into the dark` / `%1$s исчез во тьме`.
 
-**Important note:** direct moon brightness is handled by leaving the sky render
-intact and darkening the world light/fog, rather than drawing an overlay over
-the whole screen.
+**Important note:** open sky does not protect from the darkness timer. Only a
+real light source with enough block light does. The moon remains visible because
+the sky render is left intact while world light/fog are darkened.
 
 ---
 

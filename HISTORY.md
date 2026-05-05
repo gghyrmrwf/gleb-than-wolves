@@ -492,9 +492,9 @@ built jar and a short Russian checklist explaining how to test the new mechanic.
 3. Added `DarkNightClientEvents.java` for client fog/lightmap darkness without
    applying vanilla Blindness/Darkness effects.
 4. Sleep is blocked on dark nights.
-5. Standing in block light ≤ 1 without sky visibility for 5 minutes during a
-   dark night kills the player with `glebthanwolves:the_darkness` and custom
-   localized death messages.
+5. Standing in block light < 4 for 5 minutes during a dark night kills the
+   player with `glebthanwolves:the_darkness` and custom localized death
+   messages. Open sky does not protect; only enough block light does.
 
 ---
 

@@ -17,14 +17,14 @@ import net.minecraft.world.level.Level;
 @Mod.EventBusSubscriber(modid = GlebThanWolves.MODID, value = net.minecraftforge.api.distmarker.Dist.CLIENT)
 public final class DarkNightClientEvents {
 
-    private static final float DARK_NIGHT_FOG_NEAR = 8.0F;
-    private static final float DARK_NIGHT_FOG_FAR = 44.0F;
-    private static final float DARK_NIGHT_FOG_RED = 0.015F;
-    private static final float DARK_NIGHT_FOG_GREEN = 0.018F;
-    private static final float DARK_NIGHT_FOG_BLUE = 0.035F;
-    private static final float DARK_NIGHT_SKY_LIGHT_SCALE = 0.22F;
-    private static final float DARK_NIGHT_BLOCK_LIGHT_SCALE = 0.72F;
-    private static final float DARK_NIGHT_MIN_LIGHT = 0.035F;
+    private static final float DARK_NIGHT_FOG_NEAR = 4.0F;
+    private static final float DARK_NIGHT_FOG_FAR = 26.0F;
+    private static final float DARK_NIGHT_FOG_RED = 0.006F;
+    private static final float DARK_NIGHT_FOG_GREEN = 0.007F;
+    private static final float DARK_NIGHT_FOG_BLUE = 0.018F;
+    private static final float DARK_NIGHT_SKY_LIGHT_SCALE = 0.06F;
+    private static final float DARK_NIGHT_BLOCK_LIGHT_SCALE = 0.32F;
+    private static final float DARK_NIGHT_MIN_LIGHT = 0.012F;
 
     private DarkNightClientEvents() {
     }
