@@ -50,6 +50,7 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
@@ -202,6 +203,22 @@ public class HardcoreEvents {
     private static final float  LAVA_DAMAGE_MULTIPLIER = 1.5F;
     private static final int    LAVA_FIRE_MIN_TICKS = 200; // 10 sec
     // Note: meteors at night are spawned from WorldEvents.onLevelTick.
+
+    // Perception & physiology (Phase 1.13).
+    // Rain fog: while in rain under open sky, refresh short Blindness pulses.
+    private static final int    RAIN_FOG_REFRESH_INTERVAL_TICKS = 20;
+    private static final int    RAIN_FOG_DURATION_TICKS = 40;
+    // Zombie infection: 15% chance of Hunger II for 5 minutes on zombie hit.
+    private static final float  ZOMBIE_INFECTION_CHANCE = 0.15F;
+    private static final int    ZOMBIE_INFECTION_DURATION_TICKS = 6000; // 5 min
+    private static final int    ZOMBIE_INFECTION_AMPLIFIER = 1; // Hunger II
+    // Death fever: 5 min Weakness I + Mining Fatigue I after respawn.
+    private static final int    DEATH_FEVER_DURATION_TICKS = 6000;
+    // Sleep deprivation: above this awake-tick count, Slowness I + Weakness I are applied.
+    private static final long   SLEEP_DEPRIVATION_THRESHOLD_TICKS = 48000L; // 2 vanilla days
+    private static final int    SLEEP_DEPRIVATION_REFRESH_INTERVAL_TICKS = 100;
+    private static final int    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS = 200;
+    private static final String AWAKE_TICKS_TAG = "GTWAwakeTicks";
     private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
     static {
         java.lang.reflect.Field f;
@@ -382,6 +399,32 @@ public class HardcoreEvents {
         if (player.isInLava() && player.getRemainingFireTicks() < LAVA_FIRE_MIN_TICKS) {
             player.setRemainingFireTicks(LAVA_FIRE_MIN_TICKS);
         }
+
+        // Phase 1.13 — perception & physiology.
+
+        // Rain fog: short Blindness pulses while standing in rain under open sky.
+        if (player.tickCount % RAIN_FOG_REFRESH_INTERVAL_TICKS == 0
+                && level.isRainingAt(pos.above())) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.BLINDNESS,
+                    RAIN_FOG_DURATION_TICKS, 0,
+                    false, false, true));
+        }
+
+        // Sleep deprivation: track ticks awake and apply Slowness I + Weakness I past threshold.
+        long awake = player.getPersistentData().getLong(AWAKE_TICKS_TAG) + 1L;
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, awake);
+        if (awake > SLEEP_DEPRIVATION_THRESHOLD_TICKS
+                && player.tickCount % SLEEP_DEPRIVATION_REFRESH_INTERVAL_TICKS == 0) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.MOVEMENT_SLOWDOWN,
+                    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.WEAKNESS,
+                    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+        }
     }
 
     private static boolean isMidday(Level level) {
@@ -448,6 +491,17 @@ public class HardcoreEvents {
                     MobEffects.MOVEMENT_SLOWDOWN,
                     ZOMBIE_GRAB_DURATION_TICKS,
                     ZOMBIE_GRAB_AMPLIFIER,
+                    false,
+                    true));
+        }
+
+        // Zombie infection — separate roll: chance of long Hunger II from any zombie hit.
+        if (source.getEntity() instanceof Zombie
+                && player.level().random.nextFloat() < ZOMBIE_INFECTION_CHANCE) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.HUNGER,
+                    ZOMBIE_INFECTION_DURATION_TICKS,
+                    ZOMBIE_INFECTION_AMPLIFIER,
                     false,
                     true));
         }
@@ -662,6 +716,9 @@ public class HardcoreEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
+        // Reset our awake-tick counter so sleep deprivation actually clears.
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, 0L);
+
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
@@ -671,6 +728,25 @@ public class HardcoreEvents {
             Stat<ResourceLocation> stat = Stats.CUSTOM.get(Stats.TIME_SINCE_REST);
             player.getStats().setValue(player, stat, PHANTOM_SPAWN_THRESHOLD);
         });
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        Player player = event.getEntity();
+        if (event.isEndConquered()) {
+            return;
+        }
+        // Death fever — Weakness I + Mining Fatigue I for 5 minutes after respawn.
+        player.addEffect(new MobEffectInstance(
+                MobEffects.WEAKNESS,
+                DEATH_FEVER_DURATION_TICKS, 0,
+                false, true, true));
+        player.addEffect(new MobEffectInstance(
+                MobEffects.DIG_SLOWDOWN,
+                DEATH_FEVER_DURATION_TICKS, 0,
+                false, true, true));
+        // Reset awake counter on respawn so sleep deprivation doesn't carry over.
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, 0L);
     }
 
     private static void applyPlayerHpCap(Player player) {
