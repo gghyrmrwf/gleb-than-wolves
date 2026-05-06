@@ -472,6 +472,66 @@ Decision: remove the cave-danger experiment instead of tuning it further.
 **User preference added during this phase:** after every mod change, send the
 built jar and a short Russian checklist explaining how to test the new mechanic.
 
+### Phase 1.15 dark night — added then reverted
+
+**User asked** for a dark, hostile every-fifth-night mechanic. Implemented
+with custom damage source, no-sleep block, fog/lightmap. After playtest the
+user reverted via two `git revert` commits. Dark night is fully out as of
+HEAD `7453869`.
+
+### Phase 2.1 — Tool craft gate
+
+**User request:**
+> "давай запретим крафт всех инструментов(деревянных, железных и т.д) чтобы я
+> мог выстроить свою цепочку развития, разумеется крафт инструментов которые
+> добавляет мод запрещать не нужно. ещё есть ли у тебя идеи с тем что игрок
+> может найти инструменты в мире, сможешь ли ты потом реализовать идею того
+> что обычные инструменты можно только найти, но они будут слабее и не такие
+> прочные?"
+
+**User clarification on edge cases (after asking which utility items to gate):**
+> "запретить Bow, Crossbow, Flint and steel(придумаем свой способ получение
+> огня, например через трение, чуть позже это обдумаем), Shield(пока запрет,
+> потом придумаем новый крафт и ослабим)."
+
+**Implemented:**
+1. Generated 30 datapack recipe overrides for tool crafts:
+   - 25 crafting recipes: 5 tiers (wooden / stone / iron / golden / diamond)
+     × 5 tool types (pickaxe / axe / shovel / hoe / sword).
+   - 5 smithing recipes for netherite tools.
+2. Generated 4 datapack recipe overrides for special items: bow, crossbow,
+   flint and steel, shield.
+3. All 34 files use `forge:conditions: [{type: forge:false}]` — the recipe
+   never loads, so the player cannot craft these items.
+4. Mod-added recipes (`glebthanwolves:*`) are unaffected because we only
+   override `minecraft:` recipe IDs.
+
+**Not implemented this phase (deferred to Phase 2.2):** the user's idea
+about found vanilla tools being weaker than mod-crafted equivalents. A
+design proposal is documented in `ROADMAP.md` → Phase 2.2 and is awaiting
+user approval before any code is written.
+
+**Important security policy reminder added in this session:**
+> "если ты взял что-то сторонние то должен отчитаться"
+> "только код который ты вставляешь или мод который ты находишь должен быть
+> с безопасного источника чтобы не словить вирус на 100%"
+
+Going forward, before any external code is added (snippet, dependency, or
+inspiration that turns into a copy of an algorithm), an explicit report
+will be posted to the user with: source URL, author, license, exact
+content taken, why, and audit (stars / last commit / open issues). The
+user must respond "ок" before the change is committed. The same report is
+copied into `HISTORY.md` under "External code references" (a new section
+to be added once any external code is actually used; currently empty).
+
+---
+
+## External code references
+
+(Empty — no external code has been used yet. When external code is first
+used, a row per source will be added here following the format described
+in the Phase 2.1 entry above.)
+
 ---
 
 ## Original 44-mechanic brainstorm (verbatim text I sent the user)

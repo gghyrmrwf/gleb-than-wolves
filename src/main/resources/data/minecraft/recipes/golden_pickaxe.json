@@ -1,0 +1,14 @@
+{
+  "forge:conditions": [
+    {
+      "type": "forge:false"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [],
+  "result": {
+    "item": "minecraft:barrier"
+  }
+}
+

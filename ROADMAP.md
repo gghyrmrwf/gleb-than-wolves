@@ -110,17 +110,61 @@ shippable as a PR.
 
 ## Phase 2 plan
 
-### Phase 2.0 — Armor gate first
+### Phase 2.0 — Armor gate first ✅ done
 
-- Disable vanilla iron/gold/diamond armor crafting via datapack recipe
+- Disabled vanilla iron/gold/diamond armor crafting via datapack recipe
   overrides.
-- Allow only leather and chainmail armor to be worn.
-- Block found/dropped strong armor from being equipped through right-click or
-  inventory/equipment changes.
-- Next: decide whether chainmail stays as early loot armor or becomes a custom
-  craft path.
+- Only leather and chainmail armor are allowed to be worn.
+- Found/dropped strong armor is rejected on equip via
+  `LivingEquipmentChangeEvent` and `PlayerInteractEvent.RightClickItem`.
+- Open question: chainmail as early loot armor or a custom craft path
+  later — defer.
 
-### Phase 2.1 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
+### Phase 2.1 — Tool craft gate ✅ done
+
+- 30 vanilla tool recipes off (5 tiers × 5 tool types: wooden / stone / iron
+  / golden / diamond × pickaxe / axe / shovel / hoe / sword) plus 5
+  netherite smithing recipes.
+- 4 special items off: bow, crossbow, flint and steel, shield.
+- Mod tools (`glebthanwolves:primitive_axe` and any future `glebthanwolves:*`
+  items) untouched.
+- Found vanilla tools (chest loot, mob drops, structure loot) still work.
+- Implementation: `forge:false` recipe override JSONs, identical pattern to
+  Phase 2.0.
+
+### Phase 2.2 — Found tools weaker (planned)
+
+User's idea: vanilla tools are no longer crafted, only **found** in the
+world (chests, mob drops, structure loot, fishing). Found tools should be
+**weaker** than mod-crafted equivalents to push the player toward the GTW
+craft tree once it exists.
+
+**Proposed mechanics (subject to user approval before implementation):**
+
+1. **NBT-tag at pickup.** The first time a player picks up a vanilla tool,
+   we set `GTWFoundTool=true` on the stack via `EntityItemPickupEvent` /
+   `PlayerEvent.ItemPickupEvent`. This tag travels with the stack across
+   chests, hoppers, drops, etc.
+2. **Damage scaling.** `LivingHurtEvent`: if the attacker's main hand has
+   `GTWFoundTool=true`, multiply `event.getAmount()` by 0.5. Tool deals
+   half its base damage.
+3. **Break-speed scaling.** `PlayerEvent.BreakSpeed`: if held item has
+   `GTWFoundTool=true`, multiply `event.getNewSpeed()` by 0.5.
+4. **Faster wear.** On each tool use that consumes durability, also call
+   `stack.hurtAndBreak(1, ...)` an extra time → tool breaks 2× faster.
+5. **HUD hint.** Optional: lore line on the item like `"§7Found tool — half
+   stats, half durability"` so the player knows.
+
+**Sources to study before implementation:**
+- Tinkers' Construct (https://github.com/SlimeKnights/TinkersConstruct, MIT)
+  — has a "broken tool" concept with reduced stats.
+- Forge's `IItemHandler` and `EntityItemPickupEvent` examples in the Forge
+  docs.
+
+A separate report will be filed before any external code is referenced; see
+the rules in `HISTORY.md` → "External code policy".
+
+### Phase 2.3 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
 
 - Define `gtw:tier/0..4` tag files.
 - Create `BannedItems` static class + `EntityItemPickupEvent` hook (initially
@@ -129,7 +173,7 @@ shippable as a PR.
 - Result: trading completely broken (the user already wanted this in Phase
   1.7, but now it's enforced via the redesign infrastructure).
 
-### Phase 2.2 — Alternative iron (3-4 PRs)
+### Phase 2.4 — Alternative iron (3-4 PRs)
 
 - Add `gtw:raw_iron`, `gtw:iron_ingot`, plus tools that use them.
 - All vanilla recipes consuming iron → consume `gtw:iron_ingot` instead
@@ -144,7 +188,7 @@ shippable as a PR.
 - Result: iron exists, but the vanilla path is dead. Found loot is
   partially useful.
 
-### Phase 2.3 — Same treatment for every tier (one PR per tier)
+### Phase 2.5 — Same treatment for every tier (one PR per tier)
 
 - Copper (existing vanilla, just tag and gate).
 - Gold (mostly cosmetic; convert vanilla recipes that use gold → GTW gold).
@@ -154,7 +198,7 @@ shippable as a PR.
 Each tier follows the same pattern: new ore, new processing chain, datapack
 recipe overrides, legacy-conversion path.
 
-### Phase 2.4 — Structures and loot tables
+### Phase 2.6 — Structures and loot tables
 
 - Override every vanilla structure loot table to drop GTW versions.
 - Add new structures with rare ingredients:
@@ -162,14 +206,14 @@ recipe overrides, legacy-conversion path.
   - Witch huts — alchemy reagents.
   - Buried bunkers — mid-tier blueprints.
 
-### Phase 2.5 — Selective trading
+### Phase 2.7 — Selective trading
 
 - Re-enable trades, but heavily restricted:
   - Each profession sells exactly 1–2 items.
   - Prices scale with progression difficulty.
   - Wandering Trader sells only flavor items (banners, flowers, dyes).
 
-### Phase 2.6 — Survival systems on top
+### Phase 2.8 — Survival systems on top
 
 - Thirst (Tough as Nails-style, but our own implementation).
 - Body temperature (we already have desert heat / snow cold; extend to a

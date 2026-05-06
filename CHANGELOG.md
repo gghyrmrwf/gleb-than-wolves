@@ -410,6 +410,51 @@ recipe JSONs in the jar; netherite armor is blocked by the equip gate instead.
 
 ---
 
+## Phase 2.1 — Tool craft gate
+
+**Files (datapack overrides only):**
+- `src/main/resources/data/minecraft/recipes/<tier>_<tool>.json` — 25 files
+  (5 tiers × 5 tool types: wooden / stone / iron / golden / diamond ×
+  pickaxe / axe / shovel / hoe / sword)
+- `src/main/resources/data/minecraft/recipes/netherite_<tool>_smithing.json` — 5
+  files (pickaxe / axe / shovel / hoe / sword via smithing transform)
+- `src/main/resources/data/minecraft/recipes/bow.json`
+- `src/main/resources/data/minecraft/recipes/crossbow.json`
+- `src/main/resources/data/minecraft/recipes/flint_and_steel.json`
+- `src/main/resources/data/minecraft/recipes/shield.json`
+
+**Goal:** force the player off the vanilla tool tree and onto a custom GTW
+progression. The vanilla tool items still exist (so found loot, mob drops,
+fishing, structures keep working), but **the player can never craft them**.
+
+**Forbidden via crafting gate:** wooden / stone / iron / golden / diamond /
+netherite × pickaxe / axe / shovel / hoe / sword, plus bow, crossbow, flint
+and steel, shield. **34 vanilla recipes** total turned off.
+
+**Still craftable in vanilla:** shears, fishing rod, brush, bucket, compass,
+clock, spyglass, lead, name tag (all non-weapon utility items).
+
+**Mod tools unaffected:** `glebthanwolves:primitive_axe` and any future
+`glebthanwolves:*` tool items remain craftable as long as their recipes use
+the `glebthanwolves:` namespace. We only override the `minecraft:` recipe
+files, so mod recipes are unaffected.
+
+**Implementation:** identical pattern to Phase 2.0 armor gate — each recipe
+JSON has `forge:conditions: [{type: forge:false}]` so Forge skips loading
+the recipe entirely. Body of the file uses a dummy `crafting_shapeless`
+result of `minecraft:barrier` to keep the JSON valid. No Java code changes.
+
+**Important notes:**
+- The recipe files **must** have the same path as the vanilla recipe ID. The
+  filenames here match `data/minecraft/recipes/<id>.json` for each banned
+  recipe.
+- For netherite tools the vanilla recipe IDs end in `_smithing` (e.g.
+  `netherite_pickaxe_smithing`). We match this exactly.
+- Tools the player **finds** (chests, mob drops, fishing, structure loot)
+  are still usable. Phase 2.2 will weaken those.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
