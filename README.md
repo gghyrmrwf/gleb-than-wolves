@@ -9,17 +9,31 @@ makes vanilla progression noticeably harder, layered with mechanical-power machi
 
 ## Status
 
-Phase 0 — empty mod scaffold. The mod registers itself with Forge, logs a startup line
-and shows up in the in-game **Mods** menu. No mechanics yet.
+Phase 1 complete (1.1 → 1.14 + post-1.14 fix). ~30 hardcore-survival mechanics
+implemented on top of vanilla. Phase 2 has started with progression gates for
+vanilla armor.
 
-## Roadmap
+## Documentation
 
-- **Phase 0**: Forge MDK scaffold, mod id `glebthanwolves`. *(this PR)*
-- **Phase 1**: Hardcore-survival changes (stumps, hunger, mining/sleeping rules).
-- **Phase 2**: Mechanical-power system (axle, hand crank, water wheel, gearbox).
-- **Phase 3**: Production blocks (mill stone, mechanical saw, crucible, bloomery).
-- **Phase 4**: New resources (hemp, rope, wicker, steel).
-- **Phase 5**: Cosmetic / parody layer.
+Read these in order before extending the mod:
+
+- **[CHANGELOG.md](CHANGELOG.md)** — every phase, every mechanic, every parameter
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — file structure, event flow, patterns, gotchas
+- **[ROADMAP.md](ROADMAP.md)** — Phase 2.0+ design, principles, status of all
+  brainstormed mechanics
+- **[HISTORY.md](HISTORY.md)** — chronology of how the mod was built, including
+  user requests verbatim and bugs encountered
+
+## Roadmap (high-level)
+
+- **Phase 0**: Forge MDK scaffold (done).
+- **Phase 1.1–1.14**: Hardcore tweaks — bushcraft, hunger, day/night, mob aggro,
+  environmental hazards, perception, item rules (done).
+- **Phase 2.0+**: Progression redesign — starts by disabling vanilla iron/gold/
+  diamond armor crafting and blocking non-leather/non-chainmail armor equip.
+  See `ROADMAP.md`.
+- **Phase 3.0+**: Other dimensions — Nether and End rebuilt as proper
+  progression layers.
 
 ## Requirements
 

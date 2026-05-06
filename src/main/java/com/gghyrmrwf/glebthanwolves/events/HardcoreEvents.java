@@ -1,0 +1,897 @@
+package com.gghyrmrwf.glebthanwolves.events;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stat;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.projectile.LargeFireball;
+import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
+import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * Phase 1.3 + 1.4 — hardcore tweaks for the player and hostile mobs.
+ *
+ * Player:
+ *  — Sprint is gated by accelerated hunger drain. While {@code foodLevel > 6}
+ *    we add {@link #EXTRA_EXHAUSTION_PER_TICK} exhaustion every tick, draining
+ *    food roughly 6× faster than vanilla. Once foodLevel reaches 6 the vanilla
+ *    client-side check (`foodLevel > 6`) stops the player from sprinting, and
+ *    we leave drain at vanilla rate from there on. Regeneration keeps using
+ *    vanilla rules.
+ *  — Max health is reduced to {@link #PLAYER_MAX_HEALTH} HP (5 hearts) via a
+ *    permanent attribute modifier on {@link Attributes#MAX_HEALTH}, applied on
+ *    every level-join (login, respawn, dimension change).
+ *  — Eating raw beef / chicken / porkchop / mutton / rabbit / cod / salmon /
+ *    tropical_fish applies Hunger I for {@link #RAW_FOOD_HUNGER_TICKS} ticks
+ *    AND deals {@link #RAW_FOOD_DAMAGE} HP of generic (armor-bypassing) damage
+ *    per swallow.
+ *  — Eating golden apple / enchanted golden apple immediately strips the powerful
+ *    effects (regeneration, absorption, resistance, fire resistance). Hunger /
+ *    saturation gain stays.
+ *  — On {@link PlayerSleepInBedEvent}, with probability {@link #SLEEP_FAIL_CHANCE}
+ *    the sleep is rejected with {@link Player.BedSleepingProblem#OTHER_PROBLEM}
+ *    ("You can't sleep right now").
+ *  — On {@link PlayerWakeUpEvent}, after vanilla resets {@code TIME_SINCE_REST}
+ *    to zero, we schedule a server task that pushes it back above the phantom
+ *    spawn threshold, so phantoms keep spawning even after sleep.
+ *
+ * Mobs:
+ *  — Every {@link Enemy} that joins a level gets +15% max health and +10% melee
+ *    damage via permanent attribute modifiers keyed by stable UUIDs. The mob is
+ *    healed to its new max so it doesn't spawn pre-damaged.
+ *  — Every zombie additionally gets +20% movement speed.
+ */
+public class HardcoreEvents {
+
+    // Mob buffs (Phase 1.3).
+    private static final UUID HP_BOOST_UUID  = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa01");
+    private static final UUID DMG_BOOST_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa02");
+    private static final double HP_MULTIPLIER  = 0.15D;
+    private static final double DMG_MULTIPLIER = 0.10D;
+
+    // Player HP cap (Phase 1.4).
+    private static final UUID PLAYER_HP_CAP_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa03");
+    private static final double PLAYER_MAX_HEALTH = 10.0D;
+    private static final double PLAYER_HP_CAP_DELTA = PLAYER_MAX_HEALTH - 20.0D; // -10
+
+    // Zombie speed (Phase 1.4).
+    private static final UUID ZOMBIE_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa04");
+    private static final double ZOMBIE_SPEED_MULTIPLIER = 0.20D;
+
+    // Accelerated hunger drain to gate sprint (Phase 1.4).
+    // Vanilla client refuses to start sprinting while foodLevel <= 6, so we just
+    // make food drain quickly until that threshold and let vanilla take over.
+    private static final int FAST_DRAIN_THRESHOLD = 6;
+    // 0.05 exhaustion per tick = 1.0/sec → 1 food unit per ~4 sec, ~6× vanilla casual rate.
+    private static final float EXTRA_EXHAUSTION_PER_TICK = 0.05F;
+
+    // Raw food hunger debuff (Phase 1.3) and direct HP damage (Phase 1.5).
+    private static final int RAW_FOOD_HUNGER_TICKS = 240;
+    private static final float RAW_FOOD_DAMAGE = 1.0F; // half a heart
+
+    // Sleep tweaks (Phase 1.4).
+    private static final float SLEEP_FAIL_CHANCE = 0.20F;
+    private static final int PHANTOM_SPAWN_THRESHOLD = 72001; // PhantomSpawner triggers at > 72000.
+
+    // Phase 1.6 environmental / combat tweaks.
+    private static final float FALL_DAMAGE_MULTIPLIER = 1.5F;
+    private static final int   RAIN_DAMAGE_INTERVAL_TICKS = 200;  // every 10 sec
+    private static final float RAIN_DAMAGE = 1.0F;                // 0.5 hearts
+    private static final int   COLD_DAMAGE_INTERVAL_TICKS = 600;  // every 30 sec
+    private static final float COLD_DAMAGE = 1.0F;                // 0.5 hearts
+    private static final int   COLD_BLOCK_LIGHT_THRESHOLD = 7;
+    private static final float ZOMBIE_GRAB_CHANCE = 0.30F;
+    private static final int   ZOMBIE_GRAB_DURATION_TICKS = 60;   // 3 sec
+    private static final int   ZOMBIE_GRAB_AMPLIFIER = 1;         // Slowness II
+    private static final float SKELETON_ARROW_MULTIPLIER = 1.5F;
+
+    // Iron-golem hostility (Phase 1.7).
+    private static final double GOLEM_AGGRO_RANGE = 32.0D;
+    private static final int    GOLEM_RETARGET_INTERVAL_TICKS = 20;
+
+    // Wolf hostility (Phase 1.8).
+    private static final double WOLF_AGGRO_RANGE = 16.0D;
+    private static final int    WOLF_RETARGET_INTERVAL_TICKS = 20;
+
+    // Boats and oxygen (Phase 1.9).
+    // Vanilla boat: accel 0.04 / tick, friction 0.9 ⇒ steady-state v_max ≈ 0.4.
+    // With per-tick scale x: v_max = 0.04*x / (1 - 0.9*x). x=0.91 gives v_max ≈ 0.20,
+    // i.e. half of vanilla's max speed.
+    private static final double BOAT_VELOCITY_SCALE = 0.91D;
+    private static final int    EXTRA_AIR_DRAIN_PER_TICK = 1;
+
+    // Movement complications (Phase 1.10).
+    // Sneak speed: -50% via MULTIPLY_TOTAL on MOVEMENT_SPEED while crouching.
+    private static final UUID   SNEAK_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa10");
+    private static final double SNEAK_SPEED_DELTA = -0.5D;
+    // Snow / powder snow slow: -25% via MULTIPLY_TOTAL on MOVEMENT_SPEED.
+    private static final UUID   SNOW_SPEED_UUID = UUID.fromString("4e3cce71-5872-4f6d-bb29-f31ed6c9fa11");
+    private static final double SNOW_SPEED_DELTA = -0.25D;
+    // Encumbrance: ≥ this many filled inventory slots (= "stacks") → Slowness I + Mining Fatigue I.
+    // Counts every non-empty slot, so splitting a stack doesn't help: 64 cobble in one slot
+    // counts as 1, but 32+32 in two slots counts as 2.
+    private static final int    ENCUMBRANCE_FILL_THRESHOLD = 10;
+    private static final int    ENCUMBRANCE_REFRESH_INTERVAL_TICKS = 40;
+    private static final int    ENCUMBRANCE_EFFECT_DURATION_TICKS = 60;
+    // Swim slow: scale horizontal velocity in water each tick. 0.85 → ~ -30% sustained.
+    private static final double SWIM_VELOCITY_SCALE = 0.85D;
+    // Climb (ladders/vines/scaffolding): scale vertical velocity by 0.7 each tick.
+    private static final double CLIMB_VELOCITY_SCALE = 0.70D;
+    // Ice slipperiness: small per-tick momentum boost while sliding on ice w/o input.
+    private static final double ICE_SLIDE_SCALE = 1.02D;
+    private static final double ICE_SLIDE_MIN_SPEED = 0.05D;
+    private static final double ICE_SLIDE_MAX_SPEED = 0.50D;
+
+    // Predators (Phase 1.11).
+    // Silent creepers: chance a creeper spawns muted (no fuse hiss / step / hurt sounds).
+    private static final float  SILENT_CREEPER_CHANCE = 0.15F;
+    // Husk replaces zombie 10% of the time (any biome).
+    private static final float  HUSK_REPLACE_CHANCE = 0.10F;
+    // Ghast extra fireball: every N ticks, with chance, fire an additional fireball.
+    private static final int    GHAST_EXTRA_FIRE_INTERVAL_TICKS = 60;
+    private static final float  GHAST_EXTRA_FIRE_CHANCE = 0.60F;
+    // Headless creeper: chance to spawn with bumped explosion radius (3 -> 5).
+    private static final float  HEADLESS_CREEPER_CHANCE = 0.20F;
+    private static final int    HEADLESS_CREEPER_RADIUS = 5;
+
+    // Environment (Phase 1.12).
+    // Lightning storm: per player check every N ticks, chance per check to strike near them.
+    private static final int    LIGHTNING_CHECK_INTERVAL_TICKS = 400;
+    private static final float  LIGHTNING_STRIKE_CHANCE = 0.05F;
+    private static final int    LIGHTNING_OFFSET_RANGE = 3; // strike within ±3 blocks
+    // Desert heat at midday: damages player if no helmet in DESERT biome around noon.
+    // Bumped to 1 heart per 8 sec so it overcomes our slow-regen of 1 HP / 4 sec.
+    private static final int    DESERT_HEAT_INTERVAL_TICKS = 160; // 8 sec
+    private static final float  DESERT_HEAT_DAMAGE = 2.0F; // 1 heart
+    private static final long   MIDDAY_START = 5000L;
+    private static final long   MIDDAY_END   = 7000L;
+    // Snow biome cold during day: damages player if no chest armor in cold biome.
+    // Bumped similarly so the damage actually shows through slow-regen.
+    private static final int    SNOW_COLD_INTERVAL_TICKS = 600; // 30 sec
+    private static final float  SNOW_COLD_DAMAGE = 2.0F; // 1 heart
+    // Lava more aggressive: hit damage multiplier and minimum on-fire ticks.
+    private static final float  LAVA_DAMAGE_MULTIPLIER = 1.5F;
+    private static final int    LAVA_FIRE_MIN_TICKS = 200; // 10 sec
+    // Note: meteors at night are spawned from WorldEvents.onLevelTick.
+
+    // Perception & physiology (Phase 1.13).
+    // Zombie infection: 15% chance of Hunger II for 5 minutes on zombie hit.
+    private static final float  ZOMBIE_INFECTION_CHANCE = 0.15F;
+    private static final int    ZOMBIE_INFECTION_DURATION_TICKS = 6000; // 5 min
+    private static final int    ZOMBIE_INFECTION_AMPLIFIER = 1; // Hunger II
+    // Death fever: 5 min Weakness I + Mining Fatigue I after respawn.
+    private static final int    DEATH_FEVER_DURATION_TICKS = 6000;
+    // Sleep deprivation: above this awake-tick count, Slowness I + Weakness I are applied.
+    private static final long   SLEEP_DEPRIVATION_THRESHOLD_TICKS = 48000L; // 2 vanilla days
+    private static final int    SLEEP_DEPRIVATION_REFRESH_INTERVAL_TICKS = 100;
+    private static final int    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS = 200;
+    private static final String AWAKE_TICKS_TAG = "GTWAwakeTicks";
+
+    // World & items (Phase 1.14).
+    // XP loss on death: keep this fraction of total XP through respawn.
+    private static final float  DEATH_XP_KEEP_FRACTION = 0.50F;
+    // XP orbs expire faster: vanilla age limit is 6000 ticks; we set spawn-age so they
+    // live only this many ticks after appearing.
+    private static final int    XP_ORB_LIFETIME_TICKS = 600;     // 30 sec
+    private static final int    VANILLA_XP_ORB_LIFETIME_TICKS = 6000;
+    // Swamp/mangrove slow: Slowness I while standing in water in swamp biomes.
+    private static final int    SWAMP_SLOW_REFRESH_INTERVAL_TICKS = 40;
+    private static final int    SWAMP_SLOW_DURATION_TICKS = 60;
+    // Hostile flora multipliers.
+    private static final float  CACTUS_DAMAGE_MULTIPLIER = 2.0F;
+    private static final float  SWEET_BERRY_DAMAGE_MULTIPLIER = 3.0F;
+
+    private static final java.lang.reflect.Field CREEPER_EXPLOSION_RADIUS;
+    private static final java.lang.reflect.Field XP_ORB_AGE;
+    static {
+        java.lang.reflect.Field f;
+        try {
+            f = Creeper.class.getDeclaredField("explosionRadius");
+            f.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            f = null;
+        }
+        CREEPER_EXPLOSION_RADIUS = f;
+
+        java.lang.reflect.Field af;
+        try {
+            af = ExperienceOrb.class.getDeclaredField("age");
+            af.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            af = null;
+        }
+        XP_ORB_AGE = af;
+    }
+
+    private static final Set<Item> RAW_MEATS_AND_FISH = Set.of(
+            Items.BEEF,
+            Items.CHICKEN,
+            Items.PORKCHOP,
+            Items.MUTTON,
+            Items.RABBIT,
+            Items.COD,
+            Items.SALMON,
+            Items.TROPICAL_FISH
+    );
+
+    private static final Set<Item> ALLOWED_ARMOR = Set.of(
+            Items.LEATHER_HELMET,
+            Items.LEATHER_CHESTPLATE,
+            Items.LEATHER_LEGGINGS,
+            Items.LEATHER_BOOTS,
+            Items.CHAINMAIL_HELMET,
+            Items.CHAINMAIL_CHESTPLATE,
+            Items.CHAINMAIL_LEGGINGS,
+            Items.CHAINMAIL_BOOTS
+    );
+
+    @SubscribeEvent
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        Player player = event.player;
+        if (player.level().isClientSide) {
+            return;
+        }
+        if (player.isCreative() || player.isSpectator()) {
+            return;
+        }
+
+        // Accelerated hunger drain — drain ~6× faster while above the sprint threshold.
+        // Once foodLevel <= 6, vanilla blocks sprint and we stop adding extra exhaustion.
+        if (player.getFoodData().getFoodLevel() > FAST_DRAIN_THRESHOLD) {
+            player.causeFoodExhaustion(EXTRA_EXHAUSTION_PER_TICK);
+        }
+
+        Level level = player.level();
+        BlockPos pos = player.blockPosition();
+
+        // Rain damage — half a heart every 10 sec while exposed to actual precipitation.
+        if (player.tickCount % RAIN_DAMAGE_INTERVAL_TICKS == 0
+                && level.isRainingAt(pos.above())) {
+            player.hurt(player.damageSources().generic(), RAIN_DAMAGE);
+        }
+
+        // Cold damage at night — half a heart every 30 sec when no nearby block-light heat source.
+        if (player.tickCount % COLD_DAMAGE_INTERVAL_TICKS == 0
+                && isNightTime(level)
+                && level.getBrightness(LightLayer.BLOCK, pos) <= COLD_BLOCK_LIGHT_THRESHOLD) {
+            player.hurt(player.damageSources().generic(), COLD_DAMAGE);
+        }
+
+        // Boats are roughly 2× slower (Phase 1.9).
+        if (player.getVehicle() instanceof Boat boat) {
+            Vec3 dm = boat.getDeltaMovement();
+            boat.setDeltaMovement(dm.x * BOAT_VELOCITY_SCALE, dm.y, dm.z * BOAT_VELOCITY_SCALE);
+        }
+
+        // Oxygen drains 2× faster underwater (Phase 1.9).
+        if (player.isEyeInFluid(FluidTags.WATER)
+                && !player.canBreatheUnderwater()
+                && !MobEffectUtil.hasWaterBreathing(player)) {
+            int air = player.getAirSupply();
+            if (air > -20) {
+                player.setAirSupply(air - EXTRA_AIR_DRAIN_PER_TICK);
+            }
+        }
+
+        // Phase 1.10 — movement complications.
+
+        // Sneak ×0.5 via dynamic MOVEMENT_SPEED modifier.
+        toggleSpeedModifier(player, SNEAK_SPEED_UUID, "GTW sneak slow",
+                SNEAK_SPEED_DELTA, player.isCrouching());
+
+        // Snow / powder snow slow via dynamic MOVEMENT_SPEED modifier.
+        BlockState atFeet  = level.getBlockState(pos);
+        BlockState belowFeet = level.getBlockState(pos.below());
+        boolean inSnow = atFeet.is(Blocks.SNOW)
+                || atFeet.is(Blocks.POWDER_SNOW)
+                || belowFeet.is(Blocks.SNOW)
+                || belowFeet.is(Blocks.POWDER_SNOW);
+        toggleSpeedModifier(player, SNOW_SPEED_UUID, "GTW snow slow",
+                SNOW_SPEED_DELTA, inSnow);
+
+        // Ice slipperiness — give a tiny per-tick momentum boost while sliding.
+        if (!player.isCrouching() && !player.isInWater()) {
+            BlockState below = level.getBlockState(pos.below());
+            boolean onIce = below.is(Blocks.ICE)
+                    || below.is(Blocks.PACKED_ICE)
+                    || below.is(Blocks.BLUE_ICE)
+                    || below.is(Blocks.FROSTED_ICE);
+            if (onIce) {
+                Vec3 dm = player.getDeltaMovement();
+                double mag = Math.sqrt(dm.x * dm.x + dm.z * dm.z);
+                if (mag > ICE_SLIDE_MIN_SPEED && mag < ICE_SLIDE_MAX_SPEED) {
+                    player.setDeltaMovement(dm.x * ICE_SLIDE_SCALE, dm.y, dm.z * ICE_SLIDE_SCALE);
+                }
+            }
+        }
+
+        // Swim slow — scale horizontal velocity in water each tick.
+        if (player.isInWater() && player.getVehicle() == null) {
+            Vec3 dm = player.getDeltaMovement();
+            player.setDeltaMovement(dm.x * SWIM_VELOCITY_SCALE, dm.y, dm.z * SWIM_VELOCITY_SCALE);
+        }
+
+        // Climbing slower — scale vertical velocity on ladders/vines/scaffolding.
+        if (player.onClimbable() && !player.onGround()) {
+            Vec3 dm = player.getDeltaMovement();
+            if (Math.abs(dm.y) > 0.01D) {
+                player.setDeltaMovement(dm.x, dm.y * CLIMB_VELOCITY_SCALE, dm.z);
+            }
+        }
+
+        // Encumbrance — heavy inventory imposes Slowness I + Mining Fatigue I.
+        if (player.tickCount % ENCUMBRANCE_REFRESH_INTERVAL_TICKS == 0) {
+            int filled = 0;
+            for (ItemStack s : player.getInventory().items) {
+                if (!s.isEmpty()) {
+                    filled++;
+                }
+            }
+            if (filled >= ENCUMBRANCE_FILL_THRESHOLD) {
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.MOVEMENT_SLOWDOWN,
+                        ENCUMBRANCE_EFFECT_DURATION_TICKS, 0,
+                        false, false, true));
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.DIG_SLOWDOWN,
+                        ENCUMBRANCE_EFFECT_DURATION_TICKS, 0,
+                        false, false, true));
+            }
+        }
+
+        // Phase 1.12 — environment.
+
+        // Lightning during thunderstorm: occasionally strike near an exposed player.
+        if (level instanceof ServerLevel sl
+                && sl.isThundering()
+                && player.tickCount % LIGHTNING_CHECK_INTERVAL_TICKS == 0
+                && level.canSeeSky(pos)
+                && level.getRandom().nextFloat() < LIGHTNING_STRIKE_CHANCE) {
+            int ox = level.getRandom().nextInt(LIGHTNING_OFFSET_RANGE * 2 + 1) - LIGHTNING_OFFSET_RANGE;
+            int oz = level.getRandom().nextInt(LIGHTNING_OFFSET_RANGE * 2 + 1) - LIGHTNING_OFFSET_RANGE;
+            BlockPos strike = pos.offset(ox, 0, oz);
+            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(sl);
+            if (bolt != null) {
+                bolt.moveTo(Vec3.atBottomCenterOf(strike));
+                sl.addFreshEntity(bolt);
+            }
+        }
+
+        // Desert heat at midday: damages player if no helmet in any hot biome around noon.
+        // Use base temperature ≥ 1.5 to cover desert, badlands family, and savannas
+        // (anything tagged "hot" in vanilla).
+        if (player.tickCount % DESERT_HEAT_INTERVAL_TICKS == 0
+                && isMidday(level)
+                && player.getItemBySlot(EquipmentSlot.HEAD).isEmpty()
+                && level.canSeeSky(pos)
+                && level.getBiome(pos).value().getBaseTemperature() >= 1.5F) {
+            // inFire damage source shows fire icon in death screen so player gets
+            // clear feedback that this is a heat hit.
+            player.hurt(player.damageSources().inFire(), DESERT_HEAT_DAMAGE);
+        }
+
+        // Snow biome cold during day: damages player if no chest armor in cold biome.
+        if (player.tickCount % SNOW_COLD_INTERVAL_TICKS == 0
+                && !isNightTime(level)
+                && player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()
+                && level.canSeeSky(pos)) {
+            Biome biome = level.getBiome(pos).value();
+            if (biome.coldEnoughToSnow(pos)) {
+                player.hurt(player.damageSources().freeze(), SNOW_COLD_DAMAGE);
+            }
+        }
+
+        // Lava more aggressive: keep player on fire longer when in lava.
+        if (player.isInLava() && player.getRemainingFireTicks() < LAVA_FIRE_MIN_TICKS) {
+            player.setRemainingFireTicks(LAVA_FIRE_MIN_TICKS);
+        }
+
+        // Phase 1.13 — perception & physiology.
+
+        // Sleep deprivation: track ticks awake and apply Slowness I + Weakness I past threshold.
+        long awake = player.getPersistentData().getLong(AWAKE_TICKS_TAG) + 1L;
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, awake);
+        if (awake > SLEEP_DEPRIVATION_THRESHOLD_TICKS
+                && player.tickCount % SLEEP_DEPRIVATION_REFRESH_INTERVAL_TICKS == 0) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.MOVEMENT_SLOWDOWN,
+                    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.WEAKNESS,
+                    SLEEP_DEPRIVATION_EFFECT_DURATION_TICKS, 0,
+                    false, false, true));
+        }
+
+        // Phase 1.14 — swamp/mangrove slow while standing in water.
+        if (player.tickCount % SWAMP_SLOW_REFRESH_INTERVAL_TICKS == 0
+                && player.isInWater()) {
+            var holder = level.getBiome(pos);
+            if (holder.is(Biomes.SWAMP) || holder.is(Biomes.MANGROVE_SWAMP)) {
+                player.addEffect(new MobEffectInstance(
+                        MobEffects.MOVEMENT_SLOWDOWN,
+                        SWAMP_SLOW_DURATION_TICKS, 0,
+                        false, false, true));
+            }
+        }
+
+    }
+
+    private static boolean isMidday(Level level) {
+        long t = level.getDayTime() % 24000L;
+        return t >= MIDDAY_START && t <= MIDDAY_END;
+    }
+
+    private static void toggleSpeedModifier(Player player, UUID uuid, String name, double delta, boolean active) {
+        AttributeInstance speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed == null) {
+            return;
+        }
+        AttributeModifier existing = speed.getModifier(uuid);
+        if (active) {
+            if (existing == null) {
+                speed.addTransientModifier(new AttributeModifier(
+                        uuid, name, delta, AttributeModifier.Operation.MULTIPLY_TOTAL));
+            }
+        } else if (existing != null) {
+            speed.removeModifier(uuid);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingHurt(LivingHurtEvent event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        DamageSource source = event.getSource();
+        LivingEntity victim = event.getEntity();
+
+        // Skeleton arrows hit harder, even against armor (already armor-piercing in vanilla
+        // for projectile, but we just bump base damage).
+        if (source.getDirectEntity() instanceof AbstractArrow
+                && source.getEntity() instanceof AbstractSkeleton) {
+            event.setAmount(event.getAmount() * SKELETON_ARROW_MULTIPLIER);
+        }
+
+        // Player-only effects below.
+        if (!(victim instanceof Player player)) {
+            return;
+        }
+        if (player.isCreative() || player.isSpectator()) {
+            return;
+        }
+
+        // Heavier fall damage.
+        if (source.is(DamageTypes.FALL)) {
+            event.setAmount(event.getAmount() * FALL_DAMAGE_MULTIPLIER);
+        }
+
+        // Lava and fire-from-fire damage hits 1.5× harder (Phase 1.12).
+        if (source.is(DamageTypes.LAVA)
+                || source.is(DamageTypes.IN_FIRE)
+                || source.is(DamageTypes.HOT_FLOOR)
+                || source.is(DamageTypes.ON_FIRE)) {
+            event.setAmount(event.getAmount() * LAVA_DAMAGE_MULTIPLIER);
+        }
+
+        // Cactus damage 2× (Phase 1.14).
+        if (source.is(DamageTypes.CACTUS)) {
+            event.setAmount(event.getAmount() * CACTUS_DAMAGE_MULTIPLIER);
+        }
+
+        // Sweet berry bush damage 3× (Phase 1.14).
+        if (source.is(DamageTypes.SWEET_BERRY_BUSH)) {
+            event.setAmount(event.getAmount() * SWEET_BERRY_DAMAGE_MULTIPLIER);
+        }
+
+        // Zombie grab — chance to slow the player on a zombie hit.
+        if (source.getEntity() instanceof Zombie
+                && player.level().random.nextFloat() < ZOMBIE_GRAB_CHANCE) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.MOVEMENT_SLOWDOWN,
+                    ZOMBIE_GRAB_DURATION_TICKS,
+                    ZOMBIE_GRAB_AMPLIFIER,
+                    false,
+                    true));
+        }
+
+        // Zombie infection — separate roll: chance of long Hunger II from any zombie hit.
+        if (source.getEntity() instanceof Zombie
+                && player.level().random.nextFloat() < ZOMBIE_INFECTION_CHANCE) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.HUNGER,
+                    ZOMBIE_INFECTION_DURATION_TICKS,
+                    ZOMBIE_INFECTION_AMPLIFIER,
+                    false,
+                    true));
+        }
+    }
+
+    private static boolean isNightTime(Level level) {
+        long t = level.getDayTime() % 24000L;
+        return t >= 13000L && t <= 23000L;
+    }
+
+    @SubscribeEvent
+    public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (isForbiddenArmor(event.getItemStack())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (!event.getSlot().isArmor() || !isForbiddenArmor(event.getTo())) {
+            return;
+        }
+        ItemStack forbidden = event.getTo().copy();
+        ItemStack carried = player.containerMenu.getCarried();
+        if (!event.getFrom().isEmpty() && ItemStack.matches(carried, event.getFrom())) {
+            player.setItemSlot(event.getSlot(), ItemStack.EMPTY);
+        } else {
+            player.setItemSlot(event.getSlot(), event.getFrom().copy());
+        }
+        if (!player.getInventory().add(forbidden)) {
+            player.drop(forbidden, false);
+        }
+    }
+
+    private static boolean isForbiddenArmor(ItemStack stack) {
+        if (!(stack.getItem() instanceof ArmorItem armor)) {
+            return false;
+        }
+        if (!armor.getEquipmentSlot().isArmor()) {
+            return false;
+        }
+        return !ALLOWED_ARMOR.contains(stack.getItem())
+                && armor.getMaterial() != ArmorMaterials.LEATHER
+                && armor.getMaterial() != ArmorMaterials.CHAIN;
+    }
+
+    @SubscribeEvent
+    public void onItemUseFinish(LivingEntityUseItemEvent.Finish event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (player.level().isClientSide) {
+            return;
+        }
+        Item item = event.getItem().getItem();
+
+        if (RAW_MEATS_AND_FISH.contains(item)) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.HUNGER,
+                    RAW_FOOD_HUNGER_TICKS,
+                    0,
+                    false,
+                    true));
+            player.hurt(player.damageSources().generic(), RAW_FOOD_DAMAGE);
+        }
+
+        // Strip the powerful effects from golden apples right after vanilla applies them.
+        if (item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE) {
+            player.removeEffect(MobEffects.REGENERATION);
+            player.removeEffect(MobEffects.ABSORPTION);
+            player.removeEffect(MobEffects.DAMAGE_RESISTANCE);
+            player.removeEffect(MobEffects.FIRE_RESISTANCE);
+        }
+    }
+
+    @SubscribeEvent
+    public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide) {
+            return;
+        }
+
+        // XP orbs expire after 30 sec instead of 5 min (Phase 1.14).
+        if (event.getEntity() instanceof ExperienceOrb && XP_ORB_AGE != null) {
+            try {
+                XP_ORB_AGE.setInt(event.getEntity(),
+                        VANILLA_XP_ORB_LIFETIME_TICKS - XP_ORB_LIFETIME_TICKS);
+            } catch (IllegalAccessException ignored) {
+            }
+            return;
+        }
+
+        if (!(event.getEntity() instanceof LivingEntity living)) {
+            return;
+        }
+
+        if (living instanceof Player player) {
+            applyPlayerHpCap(player);
+            return;
+        }
+
+        if (!(living instanceof Enemy)) {
+            return;
+        }
+
+        applyAttributeBoost(living, Attributes.MAX_HEALTH, HP_BOOST_UUID, "GTW HP boost", HP_MULTIPLIER);
+        // Re-fill HP to new max after boosting (otherwise the mob spawns pre-damaged).
+        living.setHealth(living.getMaxHealth());
+
+        applyAttributeBoost(living, Attributes.ATTACK_DAMAGE, DMG_BOOST_UUID, "GTW DMG boost", DMG_MULTIPLIER);
+
+        if (living instanceof Zombie) {
+            applyAttributeBoost(living, Attributes.MOVEMENT_SPEED, ZOMBIE_SPEED_UUID,
+                    "GTW zombie speed", ZOMBIE_SPEED_MULTIPLIER);
+        }
+
+        // Iron golems lose any "player-built" allegiance so canAttack(player) is true
+        // (their actual targeting is forced from the LivingTickEvent below).
+        if (living instanceof IronGolem golem) {
+            golem.setPlayerCreated(false);
+        }
+
+        // Phase 1.11 — predators.
+
+        // Husk replaces vanilla zombie 10% of the time (any biome).
+        // Only convert plain Zombie (not Husk/Drowned/ZombieVillager subclasses).
+        if (living.getClass() == Zombie.class) {
+            Zombie z = (Zombie) living;
+            if (event.getLevel().getRandom().nextFloat() < HUSK_REPLACE_CHANCE) {
+                event.setCanceled(true);
+                Husk husk = EntityType.HUSK.create(z.level());
+                if (husk != null) {
+                    husk.moveTo(z.getX(), z.getY(), z.getZ(), z.getYRot(), z.getXRot());
+                    z.level().addFreshEntity(husk);
+                }
+                return;
+            }
+        }
+
+        // Silent creeper: 15% chance to spawn fully muted (no fuse hiss either).
+        // Headless creeper: 20% chance to spawn with bumped explosion radius.
+        if (living instanceof Creeper creeper) {
+            if (creeper.level().getRandom().nextFloat() < SILENT_CREEPER_CHANCE) {
+                creeper.setSilent(true);
+            }
+            if (CREEPER_EXPLOSION_RADIUS != null
+                    && creeper.level().getRandom().nextFloat() < HEADLESS_CREEPER_CHANCE) {
+                try {
+                    CREEPER_EXPLOSION_RADIUS.setInt(creeper, HEADLESS_CREEPER_RADIUS);
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onLivingTick(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide) {
+            return;
+        }
+        // Iron golems hunt the nearest player on sight (Phase 1.7).
+        if (entity instanceof IronGolem golem) {
+            if (golem.tickCount % GOLEM_RETARGET_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity current = golem.getTarget();
+            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
+                return;
+            }
+            Player nearest = golem.level().getNearestPlayer(golem, GOLEM_AGGRO_RANGE);
+            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+                golem.setTarget(nearest);
+            }
+        }
+
+        // Wild wolves hunt the nearest player on sight (Phase 1.8).
+        if (entity instanceof Wolf wolf && !wolf.isTame()) {
+            if (wolf.tickCount % WOLF_RETARGET_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity current = wolf.getTarget();
+            if (current instanceof Player p && p.isAlive() && !p.isCreative() && !p.isSpectator()) {
+                return;
+            }
+            Player nearest = wolf.level().getNearestPlayer(wolf, WOLF_AGGRO_RANGE);
+            if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+                wolf.setTarget(nearest);
+                wolf.setIsInterested(true);
+            }
+        }
+
+        // Ghasts shoot extra fireballs (Phase 1.11).
+        if (entity instanceof Ghast ghast) {
+            if (ghast.tickCount % GHAST_EXTRA_FIRE_INTERVAL_TICKS != 0) {
+                return;
+            }
+            LivingEntity target = ghast.getTarget();
+            if (target == null || !target.isAlive()) {
+                return;
+            }
+            if (ghast.level().getRandom().nextFloat() >= GHAST_EXTRA_FIRE_CHANCE) {
+                return;
+            }
+            Vec3 view = ghast.getViewVector(1.0F);
+            double sx = ghast.getX() + view.x * 4.0D;
+            double sy = ghast.getY(0.5D) + 0.5D;
+            double sz = ghast.getZ() + view.z * 4.0D;
+            double dx = target.getX() - sx;
+            double dy = target.getY(0.5D) - sy;
+            double dz = target.getZ() - sz;
+            LargeFireball fireball = new LargeFireball(ghast.level(), ghast, dx, dy, dz, ghast.getExplosionPower());
+            fireball.setPos(sx, sy, sz);
+            ghast.level().addFreshEntity(fireball);
+            if (!ghast.isSilent()) {
+                ghast.level().levelEvent(null, 1016, ghast.blockPosition(), 0);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel().isClientSide) {
+            return;
+        }
+        // Block trade GUI for villagers and wandering traders (Phase 1.7).
+        if (event.getTarget() instanceof AbstractVillager) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerSleep(PlayerSleepInBedEvent event) {
+        Player player = event.getEntity();
+        if (player.level().isClientSide) {
+            return;
+        }
+        if (player.level().random.nextFloat() < SLEEP_FAIL_CHANCE) {
+            event.setResult(Player.BedSleepingProblem.OTHER_PROBLEM);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerWakeUp(PlayerWakeUpEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        // Reset our awake-tick counter so sleep deprivation actually clears.
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, 0L);
+
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return;
+        }
+        // Run after vanilla's stopSleepInBed bookkeeping so our value sticks.
+        server.execute(() -> {
+            Stat<ResourceLocation> stat = Stats.CUSTOM.get(Stats.TIME_SINCE_REST);
+            player.getStats().setValue(player, stat, PHANTOM_SPAWN_THRESHOLD);
+        });
+    }
+
+    @SubscribeEvent
+    public void onPlayerClone(PlayerEvent.Clone event) {
+        if (!event.isWasDeath()) {
+            return;
+        }
+        Player old = event.getOriginal();
+        Player neu = event.getEntity();
+        // Vanilla resets new player's totalExperience to 0; we re-grant 50% of the old.
+        old.reviveCaps();
+        try {
+            int kept = (int) Math.floor(old.totalExperience * DEATH_XP_KEEP_FRACTION);
+            if (kept > 0) {
+                neu.giveExperiencePoints(kept);
+            }
+        } finally {
+            old.invalidateCaps();
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        Player player = event.getEntity();
+        if (event.isEndConquered()) {
+            return;
+        }
+        // Death fever — Weakness I + Mining Fatigue I for 5 minutes after respawn.
+        player.addEffect(new MobEffectInstance(
+                MobEffects.WEAKNESS,
+                DEATH_FEVER_DURATION_TICKS, 0,
+                false, true, true));
+        player.addEffect(new MobEffectInstance(
+                MobEffects.DIG_SLOWDOWN,
+                DEATH_FEVER_DURATION_TICKS, 0,
+                false, true, true));
+        // Reset awake counter on respawn so sleep deprivation doesn't carry over.
+        player.getPersistentData().putLong(AWAKE_TICKS_TAG, 0L);
+    }
+
+    private static void applyPlayerHpCap(Player player) {
+        AttributeInstance hp = player.getAttribute(Attributes.MAX_HEALTH);
+        if (hp == null) {
+            return;
+        }
+        if (hp.getModifier(PLAYER_HP_CAP_UUID) == null) {
+            hp.addPermanentModifier(new AttributeModifier(
+                    PLAYER_HP_CAP_UUID,
+                    "GTW player HP cap",
+                    PLAYER_HP_CAP_DELTA,
+                    AttributeModifier.Operation.ADDITION));
+        }
+        if (player.getHealth() > player.getMaxHealth()) {
+            player.setHealth(player.getMaxHealth());
+        }
+    }
+
+    private static void applyAttributeBoost(LivingEntity entity,
+                                            Attribute attribute,
+                                            UUID uuid,
+                                            String name,
+                                            double value) {
+        AttributeInstance instance = entity.getAttribute(attribute);
+        if (instance == null) {
+            return;
+        }
+        if (instance.getModifier(uuid) != null) {
+            return;
+        }
+        instance.addPermanentModifier(new AttributeModifier(
+                uuid, name, value, AttributeModifier.Operation.MULTIPLY_TOTAL));
+    }
+}

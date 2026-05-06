@@ -1,0 +1,10 @@
+{
+  "type": "glebthanwolves:add_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/tall_grass",
+    "minecraft:blocks/large_fern"
+  ],
+  "item": "glebthanwolves:plant_fiber",
+  "chance": 0.15
+}
