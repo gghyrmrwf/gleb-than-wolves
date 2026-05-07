@@ -555,6 +555,59 @@ expressed in source form rather than compiled form.
 - **Visual identity.** Models point at vanilla textures; new GTW stone
   tools are visually indistinguishable from vanilla in inventory.
 
+### Phase 2.3a — Mining gate (default-deny scaffold, EMPTY whitelist)
+
+**User pivot away from "found tools weaker":** the Phase 2.3 plan in
+ROADMAP was originally to mark vanilla tools weaker via NBT. The user
+proposed something more radical instead:
+> "просто я хочу реализовать то что с блоков падает их кусочки а не сами
+> блоки, чтобы блоки стали ценными, и не все блоки можно было скрафтить,
+> но запрещать каждый блок для каждого инструмента слишком долго, я
+> подумал что можно запретить всё для всех инструментов и руки, а потом
+> разрешать по малому для каждого тира"
+
+Translation: blocks should drop *shards* (not themselves) so that blocks
+become a valuable resource. Banning every block per tool is too tedious;
+instead, ban EVERYTHING by default and unlock blocks per tier in small
+batches.
+
+This splits the original Phase 2.3 into three sub-phases:
+- **2.3a** — mining gate scaffold (this entry).
+- **2.3b** — block-shard system (universal `stone_shard`, variant A).
+- **2.3c** — found-tools-weaker (deferred; replaced by structure-loot
+  replacement in Phase 2.7).
+
+**Q&A in chat (paraphrased):**
+- Q1: which blocks per tier? → "пока полный вайтлист" misread by Devin
+  as "use my draft list"; user clarified "ПОЛНЫЙ, всё блокируй" — i.e.
+  whitelist contents = empty. Block everything.
+- Q2: how is tier determined? → use `Tier.getLevel()` of the held tool.
+  Vanilla `correctToolForDrops` still controls drops (unchanged).
+- Q3: shards universal or per-block? → variant A (universal stone_shard).
+  Per-block shards may be added later only for ones that need identity.
+- Q4: shard economy? → "крутая потеря" — block drops 2 shards, recipe is
+  4 shards → 1 block (50% loss).
+- Q5: which blocks first? → empty whitelist. Decide per-block as we go.
+- Q6: silk-touch? → bypasses shard mechanic, gives whole block.
+- Q7: found vanilla tools? → defer; later replace structure-loot spawns
+  with GTW tools instead.
+
+**Implemented in this PR:**
+1. `events/MiningGate.java` — `PlayerEvent.BreakSpeed` returns 0 if the
+   held tool's tier (hand=0, primitive/wood=1, stone=2, iron=3, diamond=4,
+   netherite=5) is too low for the block's `breakable_by/<tier>` tag.
+   `BlockEvent.BreakEvent` cancels as a defense-in-depth backup.
+2. Six tag files (`hand` / `primitive` / `stone` / `iron` / `diamond` /
+   `netherite`), all empty except for chained tag-includes (each tier
+   transitively includes the lower one). So adding a block to e.g.
+   `stone.json` automatically unlocks it for stone, iron, diamond, and
+   netherite tiers.
+3. `GlebThanWolves.java` registers `new MiningGate()`.
+
+**Effect on gameplay:** spawn is now a hard soft-lock — nothing breaks.
+This is intentional. The next PR (or several PRs) will unlock blocks per
+tier as we design out from the spawn experience.
+
 **Important security policy reminder added in this session:**
 > "если ты взял что-то сторонние то должен отчитаться"
 > "только код который ты вставляешь или мод который ты находишь должен быть
