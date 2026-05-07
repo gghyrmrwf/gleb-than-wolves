@@ -5,13 +5,207 @@ This document is the locked-in design for the next, large PR (Phase
 не сами себя; собрать блок обратно — дороже" combined with the user's
 24-category breakdown of which tier mines what.
 
-Status: **draft for review**. Once approved, this file ships in the
-implementation PR (it is the spec the code is built against).
+Status: **approved with revisions** (user answered the 7 open issues
+in §8 — see new §0 below for the locked-in changes). The implementation
+PR will be built against the revised spec. The original 24-category
+body (§4) is preserved for context; revisions are noted inline.
 
 > The user's original 24-category list is preserved verbatim in
 > `HISTORY.md` → "Phase 2.3b — Block shards + 24-category mining logic
 > (in design)". This doc is Devin's expanded form, with the
 > carve-outs / additions / coverage list applied.
+
+---
+
+## 0. User answers (locked-in revisions to this spec)
+
+User responded to the 7 open issues in chat. Concretely:
+
+### 0.1 Valuable ores get their own shard; non-valuable ores stay vanilla
+
+Answer to Q1 from §8: **split the ore-shard families per-mineral, but
+only for ores that produce a craft-critical resource**. The rest stay
+at vanilla drops (excluded from the shard system; mining gate still
+enforces the tier required to break them).
+
+| Ore block | Vanilla drop | New shard | Mode |
+|---|---|---|---|
+| `iron_ore`, `deepslate_iron_ore` | `raw_iron` | `iron_fragment` | **replace** |
+| `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | `raw_gold` / `gold_nugget` | `gold_fragment` | **replace** |
+| `emerald_ore`, `deepslate_emerald_ore` | `emerald` | `emerald_fragment` | **replace** |
+| `diamond_ore`, `deepslate_diamond_ore` | `diamond` | `diamond_fragment` | **replace** |
+| `nether_quartz_ore` | `quartz` | `quartz_fragment` | **replace** |
+| `ancient_debris` | `ancient_debris` (block) | `ancient_fragment` | **replace** |
+| `coal_ore`, `deepslate_coal_ore` | `coal` | — | **excluded** (vanilla) |
+| `copper_ore`, `deepslate_copper_ore` | `raw_copper` | — | **excluded** (vanilla) |
+| `lapis_ore`, `deepslate_lapis_ore` | `lapis_lazuli` | — | **excluded** (vanilla) |
+| `redstone_ore`, `deepslate_redstone_ore` | `redstone` | — | **excluded** (vanilla) |
+
+This effectively replaces §4's `BASIC_ORE` (#9), `METAL_ORE` (#10),
+`RARE_ORE` (#11), and `ANCIENT_MATERIAL` (#12) with **6 distinct shard
+items** plus 4 excluded ore families. The user-facing rule for the
+implementation:
+
+- 4 `iron_fragment` → 1 `raw_iron` (and similarly for each shard).
+- 8 `iron_fragment` → 1 `iron_ore` (block, for collectors).
+- Ditto for gold / emerald / diamond / quartz / ancient_debris.
+- Coal / copper / lapis / redstone — vanilla drops, no recombine
+  recipe needed.
+
+Note: `ancient_fragment` still also covers `obsidian`, `crying_obsidian`,
+`respawn_anchor` (not just ancient_debris), since those are the other
+diamond-tier mining targets in the user's #12 category. These are
+*not* ore-derived; they're the "end-game stone" group.
+
+### 0.2 Simplify decorative / non-essential blocks ("только важные")
+
+Answer to Q2 from §8 + user's general guidance "можешь пропускать
+предметы которые не очень важные для крафтов или прохождения игры,
+только важные блоки и ресурсы".
+
+Devin's interpretation: shard system applies to **important** blocks
+(structural, ores, resources). Decorative or one-off blocks fall back
+to vanilla drops with mining-gate-only enforcement.
+
+**Excluded from shard system (vanilla drops, gate still applies):**
+
+- 🌊 `sponge`, `wet_sponge` — niche, vanilla self-drop.
+- 🐝 `hay_block`, `dried_kelp_block`, `honey_block`, `honeycomb_block`,
+  `slime_block` — niche, vanilla self-drop.
+- 🐸 `frogspawn`, `pearlescent_froglight`, `verdant_froglight`,
+  `ochre_froglight` — niche light/decor, vanilla self-drop.
+- 💀 `skeleton_skull`, `wither_skeleton_skull`, `zombie_head`,
+  `creeper_head`, `dragon_head`, `piglin_head`, `player_head` —
+  trophies, vanilla self-drop.
+- 🪟 `cake` — vanilla self-eaten, no drop, leave as-is.
+- 🪸 `coral`, `coral_block`, `coral_fan`, `dead_coral*` — vanilla
+  drops (alive coral disappears without silk; dead self-drops). Don't
+  add shards.
+- 🛏️ `bed` (16 colors) — additive: vanilla bed drop + 2 `cloth_piece`
+  bonus (so beds don't disappear from looted villages). User's #17
+  WOOL had beds in replace mode; flip to additive here.
+- 🪖 `banner` (16 colors), `wall_banner` — vanilla self-drop with NBT
+  preserved (banner patterns matter).
+- 📦 `shulker_box` (16 colors) — **excluded** (Q3 answer (а)). Vanilla
+  self-drop with NBT (inventory inside is preserved).
+- 🔥 `torch`, `soul_torch`, `redstone_torch` — vanilla self-drop
+  (originally #23 LIGHT_FAMILY in replace mode; reclassify to vanilla
+  self-drop; placed torches are just lost like vanilla).
+- 🕯️ `candle` (and 16 colored variants) — vanilla self-drop.
+- 🎯 `target` — vanilla self-drop.
+- 📜 `lectern`, `loom`, `cartography_table`, `fletching_table`,
+  `smithing_table`, `composter`, `note_block`, `jukebox`,
+  `bookshelf`, `chiseled_bookshelf` — these are stations but **not**
+  the BTW-style commitment ones. Replace mode → `wood_chip` shards
+  (4 chips → 1 station, see §0.4 for cost). User's #6 WOOD_FAMILY
+  list includes them.
+- 🪞 `flower_pot` (with or without flower), `decorated_pot` — vanilla
+  self-drop (decorative).
+- 🌫️ `glow_lichen` — additive (already listed in #0 ORGANIC_SOFT;
+  remove from #23 LIGHT_FAMILY).
+
+**Promoted to SPECIAL_UNBREAKABLE (cannot be mined at any tier):**
+
+- `budding_amethyst` (Q2 answer (а)) — vanilla deletes on break;
+  preserve that.
+- `mob_spawner` (Q4 answer) — vanilla pickaxe-mineable but drops
+  nothing; preserve that.
+- `dragon_egg` — vanilla teleports on hit; preserve that.
+- `sculk_sensor`, `calibrated_sculk_sensor`, `sculk_shrieker`,
+  `sculk_catalyst` — Deep Dark mechanics; preserve their detection
+  behavior, don't let players relocate them.
+- `sculk` (block), `sculk_vein` — Deep Dark; preserve.
+- (All the existing UNBREAKABLE entries: bedrock, command_block,
+  end_portal_frame, barrier, structure_block, light_block, jigsaw,
+  end_portal, end_gateway, fire, soul_fire, lava, water,
+  nether_portal, moving_piston, piston_head.)
+
+### 0.3 Workshop stations cost double (8 shards)
+
+Answer to Q4 from §8: **8 shards** for the BTW-style commitment
+stations. List:
+
+```
+crafting_table, chest, trapped_chest, barrel,
+furnace, smoker, blast_furnace,
+anvil, chipped_anvil, damaged_anvil,
+brewing_stand, grindstone
+```
+
+All other recombines stay at the default 4 shards → 1 block.
+
+### 0.4 Recipe advancements deferred
+
+Answer to Q5: **defer to a separate clean-up PR** (which also resolves
+the pre-existing missing-advancements debt from Phases 2.0–2.2.y).
+The Phase 2.3b implementation PR will *not* generate advancement JSONs
+— recipes are craftable but not auto-unlocked in the recipe book.
+
+### 0.5 Rename `plant_fiber` → `organic_fiber`
+
+Answer to Q6 (а): **rename**. Implementation:
+
+- Rename the registered item ID from `glebthanwolves:plant_fiber` to
+  `glebthanwolves:organic_fiber`.
+- Add `MissingMappings` handler so old saves with `plant_fiber` stacks
+  resolve to `organic_fiber` automatically (no item loss).
+- Update the `plant_cordage` recipe input from `plant_fiber` →
+  `organic_fiber`.
+- Update lang strings (en + ru) and model JSON.
+- Update the bushcraft GLM that drops fiber off grass (Phase 1.1).
+
+### 0.6 Organic plants in additive mode
+
+Answer to Q7 (б): **additive**. Plants and food blocks drop their
+vanilla items AND 2 `organic_fiber` extra. No per-plant carve-outs
+beyond the crops listed in §4 #0.
+
+### 0.7 Final shard inventory
+
+After §0 revisions, the implementation ships **24 shard items**
+(originally planned was 24; net change is 0 because we split 4 ore
+shards into 6 valuable-ore shards but lose 4 categories' shards
+through exclusion):
+
+```
+organic_fiber          (renamed from plant_fiber; ORGANIC_SOFT additive)
+leaf_fragment          (LEAF_FAMILY additive)
+dirt_chunk             (DIRT_FAMILY replace)
+sand_pile              (SAND_FAMILY replace)
+gravel_piece           (GRAVEL_FAMILY additive)
+snow_chunk             (SNOW_FAMILY replace)
+wood_chip              (WOOD_FAMILY replace)
+stone_fragment         (SOFT_STONE replace)
+deepstone_fragment     (HARD_STONE replace)
+iron_fragment          (iron ore, replace)
+gold_fragment          (gold + nether_gold, replace)
+emerald_fragment       (emerald, replace)
+diamond_fragment       (diamond, replace)
+quartz_fragment        (nether_quartz, replace)
+ancient_fragment       (ancient_debris + obsidian + crying_obsidian + respawn_anchor, replace)
+nether_fragment        (NETHER_STONE replace)
+brick_fragment         (DECORATIVE_BLOCKS replace, narrowed)
+hard_brick_fragment    (HARD_DECORATIVE replace, narrowed)
+glass_shard            (GLASS_FAMILY replace)
+cloth_piece            (WOOL_FAMILY replace, beds excluded)
+ceramic_piece          (CERAMIC_FAMILY replace, narrowed)
+concrete_dust          (CONCRETE_FAMILY replace)
+compressed_metal_fragment  (METAL_BLOCKS replace)
+precious_fragment      (PRECIOUS_BLOCKS replace)
+machine_scrap          (MACHINE_FAMILY replace, narrowed)
+```
+
+(This is 25 entries; `organic_fiber` is the renamed `plant_fiber`, so
+the number of *new* items added by Phase 2.3b is 24.)
+
+Deleted from the original spec:
+- `ore_fragment` (BASIC_ORE) — coal/copper now excluded
+- `metal_fragment` (METAL_ORE) — only iron stays as own shard;
+  lapis/redstone excluded
+- `rare_fragment` (RARE_ORE) — split into 4 (gold/emerald/diamond/
+  quartz) + ancient remains
+- `light_fragment` (LIGHT_FAMILY) — torches/candles now excluded
+  (vanilla self-drop)
 
 ---
 
@@ -424,73 +618,62 @@ end_stone, end_stone_bricks,
 Recombines: 4 `deepstone_fragment` → 1 of the listed blocks (player
 picks recipe).
 
-### #9 — BASIC_ORE *(drop: `ore_fragment`, tier: wood, tool: pickaxe, mode: **replace**)*
+### #9 — BASIC_ORE — REVISED IN §0.1: excluded entirely
 
-Blocks:
+**Per §0.1:** coal_ore / copper_ore are **excluded** from the shard
+system. They keep vanilla drops (`coal`, `raw_copper`). Mining gate
+still enforces wood-pickaxe-tier to break them.
+
+Blocks (mining-gate `breakable_by/primitive` only):
 
 ```
 coal_ore, deepslate_coal_ore,
 copper_ore, deepslate_copper_ore
 ```
 
-Recombines (player chooses):
-- 4 `ore_fragment` → 1 `coal`
-- 4 `ore_fragment` → 1 `raw_copper`
-- 8 `ore_fragment` → 1 `coal_ore` (block; for collectors)
-- 8 `ore_fragment` → 1 `copper_ore` (block)
+No `ore_fragment` item is created. The original recombine recipes
+listed here are deleted.
 
-### #10 — METAL_ORE *(drop: `metal_fragment`, tier: stone, tool: pickaxe, mode: **replace**)*
+### #10 — METAL_ORE — REVISED IN §0.1: split per-ore
 
-Blocks:
+**Per §0.1:**
+- `iron_ore`, `deepslate_iron_ore` → `iron_fragment × 2` (replace).
+  Tier: stone pickaxe. Mining-gate tag: `has_iron_fragment`.
+  Recombines:
+    - 4 `iron_fragment` → 1 `raw_iron`
+    - 8 `iron_fragment` → 1 `iron_ore` (block; for collectors)
+- `lapis_ore`, `deepslate_lapis_ore` → **excluded**. Vanilla
+  `lapis_lazuli` drop. Tier: stone pickaxe.
+- `redstone_ore`, `deepslate_redstone_ore` → **excluded**. Vanilla
+  `redstone` drop. Tier: stone pickaxe (same loosening as before; the
+  vanilla rule of "iron pickaxe to drop redstone" is dropped because
+  our gate already enforces tier separately).
 
-```
-iron_ore, deepslate_iron_ore,
-lapis_ore, deepslate_lapis_ore,
-redstone_ore, deepslate_redstone_ore
-```
+No `metal_fragment` item is created. The fungibility issue from the
+original spec is moot.
 
-**Note on redstone_ore tier:** Vanilla requires iron pickaxe to drop
-redstone. Here, stone-tier pickaxe can mine it and gets
-`metal_fragment × 2`. This is a user-chosen *loosening* (stone-pick
-era can start collecting redstone fragments, but recombining into 4
-redstone takes 4 fragments).
+### #11 — RARE_ORE — REVISED IN §0.1: split into 4 per-ore shards
 
-Recombines (player chooses):
-- 4 `metal_fragment` → 1 `raw_iron`
-- 4 `metal_fragment` → 4 `lapis_lazuli`
-- 4 `metal_fragment` → 4 `redstone`
-- 8 `metal_fragment` → 1 `iron_ore` (block)
-- 8 `metal_fragment` → 1 `lapis_ore` (block)
-- 8 `metal_fragment` → 1 `redstone_ore` (block)
+**Per §0.1:**
+- `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` → `gold_fragment
+  × 2`. Tier: iron pickaxe (vanilla baseline). Recombines:
+    - 4 `gold_fragment` → 1 `raw_gold`
+    - 8 `gold_fragment` → 1 `gold_ore` (block)
+- `emerald_ore`, `deepslate_emerald_ore` → `emerald_fragment × 2`.
+  Recombines: 4 → 1 `emerald`; 8 → 1 `emerald_ore` (block).
+- `diamond_ore`, `deepslate_diamond_ore` → `diamond_fragment × 2`.
+  Recombines: 4 → 1 `diamond`; 8 → 1 `diamond_ore` (block).
+- `nether_quartz_ore` → `quartz_fragment × 2`. Recombines: 4 → 1
+  `quartz`; 8 → 1 `nether_quartz_ore` (block). Tier: iron pickaxe.
 
-**Open issue (flag for review):** `metal_fragment` is fungible
-between iron, lapis, and redstone. A player who only mines lapis
-ore can craft raw_iron at the same rate as a player who mines iron
-ore. If we want identity, split into `iron_fragment`, `lapis_fragment`,
-`redstone_fragment` (variant Б from Q3). Devin recommendation: keep
-fungible — matches user's "вариант А" preference for sub-categories.
-
-### #11 — RARE_ORE *(drop: `rare_fragment`, tier: iron, tool: pickaxe, mode: **replace**)*
-
-Blocks:
-
-```
-gold_ore, deepslate_gold_ore,
-emerald_ore, deepslate_emerald_ore,
-diamond_ore, deepslate_diamond_ore,
-nether_gold_ore, nether_quartz_ore
-```
-
-Recombines:
-- 4 `rare_fragment` → 1 `raw_gold`
-- 4 `rare_fragment` → 1 `emerald`
-- 4 `rare_fragment` → 1 `diamond`
-- 4 `rare_fragment` → 1 `quartz`
-- 8 `rare_fragment` → 1 of any of the above ore blocks
-
-(Same fungibility flag as METAL_ORE.)
+4 shard items instead of 1. No fungibility — mining gold gives gold
+fragments only, etc.
 
 ### #12 — ANCIENT_MATERIAL *(drop: `ancient_fragment`, tier: diamond, tool: pickaxe, mode: **replace**)*
+
+Kept as-is. Per §0.1 the `ancient_fragment` shard now also covers the
+`ancient_debris` block (since coal/copper/lapis/redstone are excluded
+but ancient_debris is in the user's diamond-tier valuable-ore list).
 
 Blocks:
 
@@ -978,7 +1161,12 @@ and log any block that is unaccounted for, so we catch gaps.
 
 ---
 
-## 8. Open issues for user decision (before implementation)
+## 8. Open issues for user decision (RESOLVED — see §0)
+
+All 7 open issues below were resolved by user in chat on 2025-05-07.
+The resolutions are detailed in §0; this section is preserved for
+historical context only.
+
 
 1. **Fungibility of metal_fragment / rare_fragment / ore_fragment.**
    Should `metal_fragment` be one item (mine lapis, get fragments,
