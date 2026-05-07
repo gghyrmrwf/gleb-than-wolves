@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "#",
+    "/",
+    "~"
+  ],
+  "key": {
+    "#": { "tag": "minecraft:planks" },
+    "/": { "item": "minecraft:stick" },
+    "~": { "item": "glebthanwolves:plant_cordage" }
+  },
+  "result": {
+    "item": "glebthanwolves:wooden_shovel",
+    "count": 1
+  }
+}

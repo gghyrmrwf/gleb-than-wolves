@@ -599,6 +599,78 @@ from which we will design out, allowing one block at a time.
 
 ---
 
+## Phase 2.2.x — Crude wooden + iron tools (finishing the GTW tier set)
+
+User asked to finish the GTW tool set up through iron before resuming
+the Phase 2.3 progression work, with the same "Crude" pattern as Phase
+2.2 (vanilla baselines, ~50% durability, ~75% mining speed, vanilla
+textures reused). 10 new tools land in this PR (5 wood + 5 iron). The
+existing `primitive_axe` (Phase 1.1) is kept as a separate starter item.
+
+**Files:**
+- `items/GtwTiers.java` — adds two new tiers next to `GTW_STONE`:
+  - `GTW_WOODEN` — durability 30 (vs vanilla 59), mining speed 1.5
+    (vs 2.0), +0 attack damage, mining level 0, enchantability 15,
+    repair = `oak_planks`. Mirrors `Tiers.WOOD`.
+  - `GTW_IRON` — durability 130 (vs vanilla 250), mining speed 4.5
+    (vs 6.0), +2.0 attack damage, mining level 2, enchantability 14,
+    repair = `iron_ingot`. Mirrors `Tiers.IRON`.
+- `ModItems.java` — registers 10 new items: `wooden_pickaxe`, `_axe`,
+  `_sword`, `_shovel`, `_hoe` (using `GTW_WOODEN`) and
+  `iron_pickaxe`, `_axe`, `_sword`, `_shovel`, `_hoe` (using
+  `GTW_IRON`). Constructor args (damage / attack speed) are vanilla
+  baselines for each tool type, so HUD attack stats match vanilla
+  exactly.
+- `ModCreativeTabs.java` — appends 10 tools to the main GTW tab in
+  display order (primitive → wooden → stone → iron).
+- `assets/glebthanwolves/lang/en_us.json` + `ru_ru.json` — adds 10 lang
+  entries each ("Crude Wooden *" / "Crude Iron *" and Russian
+  equivalents).
+- `assets/glebthanwolves/models/item/{wooden,iron}_*.json` — 10 item
+  models. They reuse vanilla textures (`minecraft:item/wooden_*` and
+  `minecraft:item/iron_*`), so no new PNGs are shipped — visually
+  identical to vanilla wood/iron tools, only the lang label marks them
+  as "Crude". Per user note: "модельки можешь взять как у ванильных
+  инструментов(потом изменим)".
+- `data/glebthanwolves/recipes/{wooden,iron}_*.json` — 10 shaped recipes
+  on a 3×3 crafting table. Same pattern as Phase 2.2 stone recipes:
+  - Wooden recipes use `#minecraft:planks` tag (any planks variant works).
+  - Iron recipes use `minecraft:iron_ingot`.
+  - All require `glebthanwolves:plant_cordage` as the binding ingredient
+    (replacing one stick), gating the entire tier set behind the
+    bushcraft chain.
+  - Sword variants use cordage as the handle (no stick).
+
+**Stats per tool** (final HUD numbers — match vanilla wood/iron exactly):
+
+| Item | Durability | Mining speed | Attack damage | Attack speed |
+|---|---|---|---|---|
+| `wooden_pickaxe` | 30 | 1.5 | 2 | -2.8 |
+| `wooden_axe`     | 30 | 1.5 | 7 | -3.2 |
+| `wooden_sword`   | 30 | 1.5 | 4 | -2.4 |
+| `wooden_shovel`  | 30 | 1.5 | 2.5 | -3.0 |
+| `wooden_hoe`     | 30 | 1.5 | 1 | -3.0 |
+| `iron_pickaxe`   | 130 | 4.5 | 4 | -2.8 |
+| `iron_axe`       | 130 | 4.5 | 9 | -3.1 |
+| `iron_sword`     | 130 | 4.5 | 6 | -2.4 |
+| `iron_shovel`    | 130 | 4.5 | 4.5 | -3.0 |
+| `iron_hoe`       | 130 | 4.5 | 1 | -1.0 |
+
+(HUD attack damage = constructor baseline + tier bonus + 1.0 player base.)
+
+**Did not change:** `MiningGate.java`, the 6 `breakable_by/*` tags
+(still empty per Phase 2.3a), `HardcoreEvents.java`, `WorldEvents.java`,
+`BushcraftBreakEvents.java`, `PrimitiveAxeItem.java`, GLM modifiers,
+the 46 vanilla recipe overrides from Phase 2.0/2.1.
+
+**Open issues carried forward:**
+- Same as Phase 2.2: no recipe advancements emitted, models reuse
+  vanilla textures.
+- Mining Gate still empty — these tools can be crafted but cannot
+  break any block until the whitelist gets populated.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

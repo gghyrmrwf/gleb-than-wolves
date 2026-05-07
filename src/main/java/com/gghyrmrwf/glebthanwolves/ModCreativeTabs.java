@@ -20,11 +20,21 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.PLANT_CORDAGE.get());
                         output.accept(ModItems.WOOD_CHUNK.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
+                        output.accept(ModItems.WOODEN_PICKAXE.get());
+                        output.accept(ModItems.WOODEN_AXE.get());
+                        output.accept(ModItems.WOODEN_SWORD.get());
+                        output.accept(ModItems.WOODEN_SHOVEL.get());
+                        output.accept(ModItems.WOODEN_HOE.get());
                         output.accept(ModItems.STONE_PICKAXE.get());
                         output.accept(ModItems.STONE_AXE.get());
                         output.accept(ModItems.STONE_SWORD.get());
                         output.accept(ModItems.STONE_SHOVEL.get());
                         output.accept(ModItems.STONE_HOE.get());
+                        output.accept(ModItems.IRON_PICKAXE.get());
+                        output.accept(ModItems.IRON_AXE.get());
+                        output.accept(ModItems.IRON_SWORD.get());
+                        output.accept(ModItems.IRON_SHOVEL.get());
+                        output.accept(ModItems.IRON_HOE.get());
                     })
                     .build());
 

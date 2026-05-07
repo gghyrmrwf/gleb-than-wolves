@@ -6,9 +6,21 @@
   "item.glebthanwolves.wood_chunk": "Кусок бревна",
   "item.glebthanwolves.primitive_axe": "Примитивный топор",
 
+  "item.glebthanwolves.wooden_pickaxe": "Грубая деревянная кирка",
+  "item.glebthanwolves.wooden_axe": "Грубый деревянный топор",
+  "item.glebthanwolves.wooden_sword": "Грубый деревянный меч",
+  "item.glebthanwolves.wooden_shovel": "Грубая деревянная лопата",
+  "item.glebthanwolves.wooden_hoe": "Грубая деревянная мотыга",
+
   "item.glebthanwolves.stone_pickaxe": "Грубая каменная кирка",
   "item.glebthanwolves.stone_axe": "Грубый каменный топор",
   "item.glebthanwolves.stone_sword": "Грубый каменный меч",
   "item.glebthanwolves.stone_shovel": "Грубая каменная лопата",
-  "item.glebthanwolves.stone_hoe": "Грубая каменная мотыга"
+  "item.glebthanwolves.stone_hoe": "Грубая каменная мотыга",
+
+  "item.glebthanwolves.iron_pickaxe": "Грубая железная кирка",
+  "item.glebthanwolves.iron_axe": "Грубый железный топор",
+  "item.glebthanwolves.iron_sword": "Грубый железный меч",
+  "item.glebthanwolves.iron_shovel": "Грубая железная лопата",
+  "item.glebthanwolves.iron_hoe": "Грубая железная мотыга"
 }
