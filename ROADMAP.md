@@ -132,7 +132,42 @@ shippable as a PR.
 - Implementation: `forge:false` recipe override JSONs, identical pattern to
   Phase 2.0.
 
-### Phase 2.2 — Found tools weaker (planned)
+### Phase 2.2 — Crude stone tools ✅ done
+
+First GTW tier of real (mineable) tools. 5 items registered
+(`stone_pickaxe`, `_axe`, `_sword`, `_shovel`, `_hoe`) with custom Tier
+`GtwTiers.GTW_STONE`: durability 70, mining speed 3.0, +1.0 attack damage,
+mining level 1, enchantability 5, repair = cobblestone. Damage / attack
+speed numbers identical to vanilla `Items.STONE_*`. Recipes use
+`plant_cordage` as a binding ingredient, gating the tier through the
+bushcraft chain. Models reuse vanilla textures.
+
+**Open issues (must be resolved before Phase 2.3):**
+
+1. **First-cobblestone problem.** With Phase 2.1 disabling vanilla
+   wooden / stone pickaxe and Phase 2.2's own `stone_pickaxe` requiring
+   cobblestone, there is no in-mod way to break a single stone block.
+   The player has to find a vanilla pickaxe in chest / mob loot. Possible
+   resolutions (one to be picked):
+   - Add a `primitive_pickaxe` (flint + cordage + stick, durability ~8,
+     mining level 0 — can break stone but nothing harder). Tiny PR.
+   - Give `primitive_axe` the `PICKAXE_DIG` tool action so it can mine
+     stone. Conceptually muddier ("axe = pickaxe"), but zero new files.
+   - Add a small chance for cobble drops to leaves / gravel via GLM and
+     accept the awkwardness.
+   - Treat "find a vanilla pickaxe in loot" as the intended path and
+     boost structure loot tables in Phase 2.7.
+2. **No recipe advancements.** New `data/glebthanwolves/recipes/stone_*`
+   files have no matching `data/glebthanwolves/advancements/recipes/*`
+   files, so the recipes will not auto-unlock in the player's recipe
+   book. Should be generated via `RecipeProvider` (datagen) before the
+   next playable jar.
+3. **Visual identity.** Models reuse vanilla `minecraft:item/stone_*`
+   textures, so GTW stone tools look identical to vanilla in inventory.
+   Only the lang label (`Crude Stone *`) marks them. Acceptable for now;
+   may want unique textures later.
+
+### Phase 2.3 — Found tools weaker (planned)
 
 User's idea: vanilla tools are no longer crafted, only **found** in the
 world (chests, mob drops, structure loot, fishing). Found tools should be
@@ -164,7 +199,7 @@ craft tree once it exists.
 A separate report will be filed before any external code is referenced; see
 the rules in `HISTORY.md` → "External code policy".
 
-### Phase 2.3 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
+### Phase 2.4 — Tags, banned-items chokepoint, no-trade scaffolding (1 PR)
 
 - Define `gtw:tier/0..4` tag files.
 - Create `BannedItems` static class + `EntityItemPickupEvent` hook (initially
@@ -173,7 +208,7 @@ the rules in `HISTORY.md` → "External code policy".
 - Result: trading completely broken (the user already wanted this in Phase
   1.7, but now it's enforced via the redesign infrastructure).
 
-### Phase 2.4 — Alternative iron (3-4 PRs)
+### Phase 2.5 — Alternative iron (3-4 PRs)
 
 - Add `gtw:raw_iron`, `gtw:iron_ingot`, plus tools that use them.
 - All vanilla recipes consuming iron → consume `gtw:iron_ingot` instead
@@ -188,7 +223,7 @@ the rules in `HISTORY.md` → "External code policy".
 - Result: iron exists, but the vanilla path is dead. Found loot is
   partially useful.
 
-### Phase 2.5 — Same treatment for every tier (one PR per tier)
+### Phase 2.6 — Same treatment for every tier (one PR per tier)
 
 - Copper (existing vanilla, just tag and gate).
 - Gold (mostly cosmetic; convert vanilla recipes that use gold → GTW gold).
@@ -198,7 +233,7 @@ the rules in `HISTORY.md` → "External code policy".
 Each tier follows the same pattern: new ore, new processing chain, datapack
 recipe overrides, legacy-conversion path.
 
-### Phase 2.6 — Structures and loot tables
+### Phase 2.7 — Structures and loot tables
 
 - Override every vanilla structure loot table to drop GTW versions.
 - Add new structures with rare ingredients:
@@ -206,14 +241,14 @@ recipe overrides, legacy-conversion path.
   - Witch huts — alchemy reagents.
   - Buried bunkers — mid-tier blueprints.
 
-### Phase 2.7 — Selective trading
+### Phase 2.8 — Selective trading
 
 - Re-enable trades, but heavily restricted:
   - Each profession sells exactly 1–2 items.
   - Prices scale with progression difficulty.
   - Wandering Trader sells only flavor items (banners, flowers, dyes).
 
-### Phase 2.8 — Survival systems on top
+### Phase 2.9 — Survival systems on top
 
 - Thirst (Tough as Nails-style, but our own implementation).
 - Body temperature (we already have desert heat / snow cold; extend to a

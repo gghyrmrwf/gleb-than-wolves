@@ -455,6 +455,63 @@ result of `minecraft:barrier` to keep the JSON valid. No Java code changes.
 
 ---
 
+## Phase 2.2 — Crude stone tools (first GTW tier)
+
+**Files:**
+- `items/GtwTiers.java` — defines `GtwTiers.GTW_STONE` (durability 70, mining
+  speed 3.0, +1.0 attack damage, mining level 1, enchantability 5, repair
+  ingredient cobblestone). Same level/damage/repair as vanilla `Tiers.STONE`,
+  but ~53% durability and 75% mining speed.
+- `ModItems.java` — registers `stone_pickaxe`, `stone_axe`, `stone_sword`,
+  `stone_shovel`, `stone_hoe` using vanilla `PickaxeItem` / `AxeItem` /
+  `SwordItem` / `ShovelItem` / `HoeItem` with `GTW_STONE` tier. Damage / attack
+  speed constructor args identical to vanilla `Items.STONE_*`.
+- `ModCreativeTabs.java` — appends the 5 stone tools to the main GTW tab.
+- `assets/glebthanwolves/lang/en_us.json` + `ru_ru.json` — adds 5 lang entries
+  per language ("Crude Stone *" / "Грубый каменный *").
+- `assets/glebthanwolves/models/item/stone_*.json` — 5 item models. They
+  reuse vanilla textures (`minecraft:item/stone_*`), so no new PNGs are
+  shipped — visually identical to vanilla stone tools, only the lang label
+  marks them as "Crude".
+- `data/glebthanwolves/recipes/stone_*.json` — 5 shaped recipes on a 3×3
+  crafting table. All 5 require **plant_cordage** as a binding ingredient
+  (replacing one of vanilla's two sticks). `stone_sword` uses cordage instead
+  of a stick entirely (2 cobble + 1 cordage). The other four follow vanilla
+  shapes but with the bottom stick swapped for cordage.
+
+**Goal:** start the GTW progression replacement. The player has no vanilla
+crafting path to any tool after Phase 2.1, so Phase 2.2 hands them their
+first real (mineable-tier) toolset, gated through the bushcraft chain
+(plant_cordage). These tools are deliberately weaker than vanilla stone:
+half durability, 25% slower digging.
+
+**Stats per tool** (final HUD numbers — match vanilla stone exactly):
+
+| Item | Durability | Mining speed | Attack damage | Attack speed |
+|---|---|---|---|---|
+| `stone_pickaxe` | 70 | 3.0 | 3 | -2.8 |
+| `stone_axe`     | 70 | 3.0 | 9 | -3.2 |
+| `stone_sword`   | 70 | 3.0 | 5 | -2.4 |
+| `stone_shovel`  | 70 | 3.0 | 3.5 | -3.0 |
+| `stone_hoe`     | 70 | 3.0 | 1 | -2.0 |
+
+**Open issue — first cobblestone:** Phase 2.1 disabled vanilla wooden /
+stone pickaxe crafting and Phase 2.2's own `stone_pickaxe` requires
+cobblestone in its recipe. There is currently no in-mod path to break
+stone unless the player finds a vanilla pickaxe in chest / mob loot.
+This is tracked in `ROADMAP.md` under "Phase 2.2 — open issue".
+
+**Did not change:** `HardcoreEvents.java`, `WorldEvents.java`,
+`BushcraftBreakEvents.java`, `PrimitiveAxeItem.java`, GLM modifiers,
+the 46 vanilla recipe overrides, and all of Phase 1.x mechanics.
+
+**Recipe advancements:** not generated. New recipes will not auto-unlock
+in the player's recipe book until a `RecipeProvider` (datagen) emits the
+matching `data/glebthanwolves/advancements/recipes/*.json` files. Tracked
+under "Phase 2.2 — open issue" in ROADMAP.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
