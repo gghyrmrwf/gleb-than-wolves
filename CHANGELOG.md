@@ -671,6 +671,64 @@ the 46 vanilla recipe overrides from Phase 2.0/2.1.
 
 ---
 
+## Phase 2.2.y — Crude diamond tools (top of the GTW tier ladder)
+
+User asked to finish the diamond tier before starting the big shard /
+mining-logic work, mirroring the wooden / stone / iron pattern from
+Phase 2.2 / 2.2.x.
+
+**Files:**
+- `items/GtwTiers.java` — adds `GTW_DIAMOND` next to the wooden / stone
+  / iron tiers:
+  - `GTW_DIAMOND` — durability 780 (vs vanilla 1561), mining speed 6.0
+    (vs 8.0), +3.0 attack damage, mining level 3, enchantability 10,
+    repair = `diamond`. Mirrors `Tiers.DIAMOND`.
+- `ModItems.java` — registers 5 new items: `diamond_pickaxe`,
+  `diamond_axe`, `diamond_sword`, `diamond_shovel`, `diamond_hoe`. As
+  with the other tiers, constructor args (damage / attack speed) are
+  vanilla baselines so HUD attack stats match vanilla diamond exactly.
+- `ModCreativeTabs.java` — appends the 5 new items to the main tab
+  after the iron block (final order: primitive → wooden → stone → iron
+  → diamond).
+- `assets/glebthanwolves/lang/en_us.json` + `ru_ru.json` — 5 new lang
+  entries each ("Crude Diamond *" / "Грубый алмазный *" etc.).
+- `assets/glebthanwolves/models/item/diamond_*.json` — 5 item models,
+  reusing vanilla textures (`minecraft:item/diamond_*`).
+- `data/glebthanwolves/recipes/diamond_*.json` — 5 shaped recipes on a
+  3×3 crafting table, same shape as Phase 2.2 / 2.2.x. Use
+  `minecraft:diamond` + stick + `glebthanwolves:plant_cordage`. Sword
+  has cordage as the handle (no stick).
+
+**Stats per tool** (HUD numbers — match vanilla diamond exactly):
+
+| Item | Durability | Mining speed | Attack damage | Attack speed |
+|---|---|---|---|---|
+| `diamond_pickaxe` | 780 | 6.0 | 5 | -2.8 |
+| `diamond_axe`     | 780 | 6.0 | 9 | -3.0 |
+| `diamond_sword`   | 780 | 6.0 | 7 | -2.4 |
+| `diamond_shovel`  | 780 | 6.0 | 5.5 | -3.0 |
+| `diamond_hoe`     | 780 | 6.0 | 1 | 0.0 |
+
+(HUD attack damage = constructor baseline + tier bonus +3.0 + 1.0
+player base.)
+
+**Did not change:** `MiningGate.java`, the 6 `breakable_by/*` tags
+(still empty per Phase 2.3a), `HardcoreEvents.java`, `WorldEvents.java`,
+`BushcraftBreakEvents.java`, `PrimitiveAxeItem.java`, GLM modifiers,
+vanilla recipe overrides from Phase 2.0 / 2.1, all earlier Phase 2.2 /
+2.2.x / 2.3a artifacts.
+
+**Open issues carried forward:**
+- Same as Phase 2.2 / 2.2.x: no recipe advancements emitted, models
+  reuse vanilla textures.
+- Mining Gate still empty — these tools (and all earlier GTW tools)
+  can be crafted but cannot break any block until the whitelist gets
+  populated. That is the goal of the next, much larger PR (Phase
+  2.3b — shards + 24-category mining logic).
+- No netherite tier yet. Diamond is the current ceiling.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

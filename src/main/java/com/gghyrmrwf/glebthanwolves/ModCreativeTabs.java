@@ -35,6 +35,11 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.IRON_SWORD.get());
                         output.accept(ModItems.IRON_SHOVEL.get());
                         output.accept(ModItems.IRON_HOE.get());
+                        output.accept(ModItems.DIAMOND_PICKAXE.get());
+                        output.accept(ModItems.DIAMOND_AXE.get());
+                        output.accept(ModItems.DIAMOND_SWORD.get());
+                        output.accept(ModItems.DIAMOND_SHOVEL.get());
+                        output.accept(ModItems.DIAMOND_HOE.get());
                     })
                     .build());
 

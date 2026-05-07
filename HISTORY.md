@@ -631,6 +631,105 @@ This splits the original Phase 2.3 into three sub-phases:
 This is intentional. The next PR (or several PRs) will unlock blocks per
 tier as we design out from the spawn experience.
 
+### Phase 2.2.y — Crude diamond tools
+
+User asked to finish the diamond tier before starting the much larger
+shard / 24-category mining-logic PR:
+> "сделай уже алмазные инструменты, после того как ты сделаешь алмазные
+> инструменты начинай работу над кусочками блоков и всеми этими
+> семействами, дропами предметов и т.д, то есть логику развития, это
+> будет самое глобальное что ты делал, потрать на это сколько надо
+> времени, максимально внимательно и подробно учитывая все проблемы"
+
+Translation: do the diamond tools, then start the big shard +
+block-family + drop-logic work. Take the time you need on the big one
+and be thorough.
+
+This PR (Phase 2.2.y) is the small one: same "Crude" pattern as the
+wooden / stone / iron tools — `GTW_DIAMOND` mirrors `Tiers.DIAMOND`
+(level 3, +3.0 dmg) but with 50% durability (780 vs 1561) and 75%
+mining speed (6.0 vs 8.0). Repair = `diamond`. Five new tools, vanilla
+baseline HUD attack stats, vanilla textures reused. Recipes use
+`minecraft:diamond` + stick + cordage (sword: cordage, no stick).
+
+Mining gate is still empty so the tools can be crafted but cannot break
+any block until Phase 2.3b lands.
+
+### Phase 2.3b — Block shards + 24-category mining logic (in design)
+
+**User's final design pivot** (message in chat): replaces the earlier
+"variant A — universal stone_shard" idea. The user wrote a full
+24-category breakdown, each with its own shard / fragment item, its own
+mining-tier requirement, and a list of vanilla blocks that fall under
+it. There is also a placeholder for a future netherite tier (24th
+category SPECIAL_UNBREAKABLE).
+
+**Devin reviewed the design and surfaced these issues, which the user
+then resolved (responses inlined):**
+
+1. **Crops in ORGANIC_SOFT** would replace `wheat` / `carrots` /
+   `potatoes` / `beetroot` / `sweet_berries` with `organic_fiber` and
+   make the food chain impossible. → User: "ты прав с едой ошибка";
+   pick variant (a) — crops are excluded from the shard system.
+2. **Leaves in LEAF_FAMILY** would suppress vanilla sapling / apple /
+   stick drops, breaking tree regen → soft-lock the world. → User:
+   "ты прав, листья и органику лучше не трогать"; chosen approach is
+   variant (в) — `leaf_fragment` drops *additively* alongside vanilla
+   drops.
+3. **Gravel in GRAVEL_FAMILY** would suppress vanilla flint and break
+   the spawn `primitive_axe` recipe (flint + stick + cordage). → User
+   left it to Devin; chosen approach is *additive* gravel_piece + flint
+   so that the spawn loop still works.
+4. **Suspicious sand / suspicious gravel.** Vanilla archaeology brushes
+   them for pottery sherds. → User left it to Devin; suspicious blocks
+   are excluded from the shard system entirely.
+5. **Boats in WOOD_FAMILY.** Boats are entities, not blocks. → Will be
+   removed from the WOOD_FAMILY list (entity, can't be mined).
+6. **Furnace / chest / crafting_table.** Breaking them yields the
+   family shard (`stone_fragment` / `wood_chip`), not the placed
+   item. This is BTW-style: once you place a station, you cannot
+   relocate it. User accepted "всё остальное на твой вкус, главное
+   чтобы это не ломало мод и игру"; design kept as-is.
+7. **24 distinct shards instead of universal stone_shard.** This is a
+   reversal of the Q3 answer ("вариант A"). User has now committed to
+   24 shards in the new design. Devin will go with that.
+8. **Netherite tier.** User capped tools at diamond. The `breakable_by/
+   netherite` tag exists in code (Phase 2.3a) but stays empty.
+9. **`correctToolForDrops` mismatches.** Some blocks (ice, rails,
+   redstone_ore, glass) have vanilla rules that would let the player
+   break the block at the gate-permitted tier but vanilla would still
+   refuse the drop. Devin's plan: GLM injects the shard regardless of
+   `correctToolForDrops`, so the drop-tier logic is unified through the
+   gate alone. (Silk-touch carve-out preserves the original block.)
+10. **Massive coverage list.** ~750 vanilla 1.20.1 blocks, many not in
+    the user's 24 lists (bookshelf, composter, beehive, bee_nest,
+    pumpkin / melon, mushroom_block / stem, banners, shulker boxes,
+    coral, sponge, hay_block / slime / honey / honeycomb_block, mob
+    heads, sculk family, amethyst clusters / buds / budding, copper
+    variants, slabs / stairs / walls of every stone family, etc.).
+    These will be folded into the appropriate categories or marked
+    SPECIAL_UNBREAKABLE in `MINING_DESIGN.md` before code lands.
+
+**Ore-recombine recipes** (per user: ores also drop fragments, then
+combine back into "полноценные куски"):
+
+- 4 `ore_fragment` → 1 `coal` OR 1 `raw_copper` (player picks recipe).
+- 4 `metal_fragment` → 1 `raw_iron` OR 4 `lapis_lazuli` OR 4 `redstone`.
+- 4 `rare_fragment` → 1 `raw_gold` OR 1 `emerald` OR 1 `diamond` OR 1
+  `quartz`.
+- 4 `ancient_fragment` → 1 `ancient_debris` (block, not netherite).
+
+**Implementation scope (planned for the PR):**
+
+1. 24 new items in `ModItems.java`.
+2. 24 GLMs (one per category) in `data/glebthanwolves/loot_modifiers/`.
+3. 24 block tags (`glebthanwolves:has_<name>_shard`).
+4. Mining-gate whitelists (`breakable_by/<tier>`) updated to reference
+   the 24 category tags via `forge:replace=false` includes.
+5. Recombine recipes (one per re-craftable target — many).
+6. `MINING_DESIGN.md` design doc with the full ~750-block annotated
+   list, before code lands.
+
 **Important security policy reminder added in this session:**
 > "если ты взял что-то сторонние то должен отчитаться"
 > "только код который ты вставляешь или мод который ты находишь должен быть

@@ -22,5 +22,11 @@
   "item.glebthanwolves.iron_axe": "Грубый железный топор",
   "item.glebthanwolves.iron_sword": "Грубый железный меч",
   "item.glebthanwolves.iron_shovel": "Грубая железная лопата",
-  "item.glebthanwolves.iron_hoe": "Грубая железная мотыга"
+  "item.glebthanwolves.iron_hoe": "Грубая железная мотыга",
+
+  "item.glebthanwolves.diamond_pickaxe": "Грубая алмазная кирка",
+  "item.glebthanwolves.diamond_axe": "Грубый алмазный топор",
+  "item.glebthanwolves.diamond_sword": "Грубый алмазный меч",
+  "item.glebthanwolves.diamond_shovel": "Грубая алмазная лопата",
+  "item.glebthanwolves.diamond_hoe": "Грубая алмазная мотыга"
 }

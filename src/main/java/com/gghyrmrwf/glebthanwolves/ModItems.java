@@ -74,5 +74,20 @@ public final class ModItems {
     public static final RegistryObject<Item> IRON_HOE = ITEMS.register("iron_hoe",
             () -> new HoeItem(GtwTiers.GTW_IRON, -2, -1.0f, new Item.Properties()));
 
+    public static final RegistryObject<Item> DIAMOND_PICKAXE = ITEMS.register("diamond_pickaxe",
+            () -> new PickaxeItem(GtwTiers.GTW_DIAMOND, 1, -2.8f, new Item.Properties()));
+
+    public static final RegistryObject<Item> DIAMOND_AXE = ITEMS.register("diamond_axe",
+            () -> new AxeItem(GtwTiers.GTW_DIAMOND, 5.0f, -3.0f, new Item.Properties()));
+
+    public static final RegistryObject<Item> DIAMOND_SWORD = ITEMS.register("diamond_sword",
+            () -> new SwordItem(GtwTiers.GTW_DIAMOND, 3, -2.4f, new Item.Properties()));
+
+    public static final RegistryObject<Item> DIAMOND_SHOVEL = ITEMS.register("diamond_shovel",
+            () -> new ShovelItem(GtwTiers.GTW_DIAMOND, 1.5f, -3.0f, new Item.Properties()));
+
+    public static final RegistryObject<Item> DIAMOND_HOE = ITEMS.register("diamond_hoe",
+            () -> new HoeItem(GtwTiers.GTW_DIAMOND, -3, 0.0f, new Item.Properties()));
+
     private ModItems() {}
 }
