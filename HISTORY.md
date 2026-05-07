@@ -506,10 +506,54 @@ HEAD `7453869`.
 4. Mod-added recipes (`glebthanwolves:*`) are unaffected because we only
    override `minecraft:` recipe IDs.
 
-**Not implemented this phase (deferred to Phase 2.2):** the user's idea
+**Not implemented this phase (deferred to Phase 2.3):** the user's idea
 about found vanilla tools being weaker than mod-crafted equivalents. A
-design proposal is documented in `ROADMAP.md` → Phase 2.2 and is awaiting
+design proposal is documented in `ROADMAP.md` → Phase 2.3 and is awaiting
 user approval before any code is written.
+
+### Phase 2.2 — Crude stone tools
+
+**Origin:** the user built a prototype locally and shipped a jar
+(`glebthanwolves-phase2.2-stone-tools.jar`) for review. The jar contained
+5 new items, 5 recipes, 5 models, lang updates, and a new `GtwTiers` class.
+Devin extracted the jar, decompiled the changed classes, diffed against
+the PR #2 branch tip, and reconstructed the source from bytecode (mappings
+were known: `m_6609_=getUses`, `m_6624_=getSpeed`, `m_6631_=getAttackDamageBonus`,
+`m_6604_=getLevel`, `m_6601_=getEnchantmentValue`, `m_6282_=getRepairIngredient`).
+No external code was used — `GtwTiers.java` is the user's own logic, just
+expressed in source form rather than compiled form.
+
+**User intent (paraphrased):**
+> "сделаны свои каменные инструменты (они пока очень сыро сделаны)"
+> ("own stone tools have been made — still very raw for now")
+
+**Implemented:**
+1. `items/GtwTiers.java` — `GTW_STONE` tier: durability 70, mining speed
+   3.0, +1.0 attack damage, mining level 1, enchantability 5, repair =
+   cobblestone. Same as vanilla `Tiers.STONE` minus durability and speed.
+2. `ModItems.java` — 5 RegistryObjects using vanilla `PickaxeItem`,
+   `AxeItem`, `SwordItem`, `ShovelItem`, `HoeItem` with `GTW_STONE`.
+   Constructor args (damage, attack speed) match `Items.STONE_*` exactly.
+3. `ModCreativeTabs.java` — adds 5 stone tools to the main GTW tab.
+4. `assets/glebthanwolves/lang/en_us.json` + `ru_ru.json` — 5 new strings
+   per language (`Crude Stone *` / `Грубый каменный *`).
+5. `assets/glebthanwolves/models/item/stone_*.json` — 5 item models that
+   reuse vanilla `minecraft:item/stone_*` textures, so no new PNGs are
+   shipped.
+6. `data/glebthanwolves/recipes/stone_*.json` — 5 shaped recipes on the
+   3×3 crafting table. All use `plant_cordage` (gating the new tier
+   through the bushcraft chain). `stone_sword` is unique — it has no
+   stick, only cordage as the handle.
+
+**Open issues carried into Phase 2.3+:**
+- **First-cobblestone problem.** No vanilla pickaxe is craftable
+  (Phase 2.1) and `stone_pickaxe` itself needs cobblestone. The player
+  must currently find a vanilla pickaxe in chest / mob loot. Resolution
+  options listed in `ROADMAP.md` → Phase 2.2.
+- **No recipe advancements** were emitted, so the new recipes will not
+  auto-unlock in the player's recipe book until a `RecipeProvider` runs.
+- **Visual identity.** Models point at vanilla textures; new GTW stone
+  tools are visually indistinguishable from vanilla in inventory.
 
 **Important security policy reminder added in this session:**
 > "если ты взял что-то сторонние то должен отчитаться"

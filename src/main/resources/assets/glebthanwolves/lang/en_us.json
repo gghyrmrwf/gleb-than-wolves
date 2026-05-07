@@ -4,5 +4,11 @@
   "item.glebthanwolves.plant_fiber": "Plant Fiber",
   "item.glebthanwolves.plant_cordage": "Plant Cordage",
   "item.glebthanwolves.wood_chunk": "Wood Chunk",
-  "item.glebthanwolves.primitive_axe": "Primitive Axe"
+  "item.glebthanwolves.primitive_axe": "Primitive Axe",
+
+  "item.glebthanwolves.stone_pickaxe": "Crude Stone Pickaxe",
+  "item.glebthanwolves.stone_axe": "Crude Stone Axe",
+  "item.glebthanwolves.stone_sword": "Crude Stone Sword",
+  "item.glebthanwolves.stone_shovel": "Crude Stone Shovel",
+  "item.glebthanwolves.stone_hoe": "Crude Stone Hoe"
 }
