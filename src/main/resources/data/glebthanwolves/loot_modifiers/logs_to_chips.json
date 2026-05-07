@@ -11,7 +11,7 @@
     "minecraft:blocks/mangrove_log",
     "minecraft:blocks/cherry_log"
   ],
-  "item": "glebthanwolves:wood_chunk",
+  "item": "glebthanwolves:wood_chip",
   "chance": 1.0,
   "count_min": 1,
   "count_max": 2

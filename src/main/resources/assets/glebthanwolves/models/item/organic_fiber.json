@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "glebthanwolves:item/plant_fiber"
+    "layer0": "glebthanwolves:item/organic_fiber"
   }
 }

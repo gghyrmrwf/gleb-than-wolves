@@ -5,6 +5,6 @@
     "minecraft:blocks/tall_grass",
     "minecraft:blocks/large_fern"
   ],
-  "item": "glebthanwolves:plant_fiber",
+  "item": "glebthanwolves:organic_fiber",
   "chance": 0.15
 }

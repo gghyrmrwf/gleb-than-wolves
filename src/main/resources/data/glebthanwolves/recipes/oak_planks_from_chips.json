@@ -3,10 +3,10 @@
   "category": "building",
   "ingredients": [
     {
-      "item": "glebthanwolves:wood_chunk"
+      "item": "glebthanwolves:wood_chip"
     },
     {
-      "item": "glebthanwolves:wood_chunk"
+      "item": "glebthanwolves:wood_chip"
     }
   ],
   "result": {

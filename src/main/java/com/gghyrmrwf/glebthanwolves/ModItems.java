@@ -16,13 +16,13 @@ public final class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, GlebThanWolves.MODID);
 
-    public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber",
+    public static final RegistryObject<Item> ORGANIC_FIBER = ITEMS.register("organic_fiber",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> PLANT_CORDAGE = ITEMS.register("plant_cordage",
             () -> new Item(new Item.Properties()));
 
-    public static final RegistryObject<Item> WOOD_CHUNK = ITEMS.register("wood_chunk",
+    public static final RegistryObject<Item> WOOD_CHIP = ITEMS.register("wood_chip",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",

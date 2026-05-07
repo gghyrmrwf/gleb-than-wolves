@@ -16,9 +16,9 @@ public final class ModCreativeTabs {
                     .title(Component.translatable("itemGroup." + GlebThanWolves.MODID))
                     .icon(() -> new ItemStack(ModItems.PRIMITIVE_AXE.get()))
                     .displayItems((params, output) -> {
-                        output.accept(ModItems.PLANT_FIBER.get());
+                        output.accept(ModItems.ORGANIC_FIBER.get());
                         output.accept(ModItems.PLANT_CORDAGE.get());
-                        output.accept(ModItems.WOOD_CHUNK.get());
+                        output.accept(ModItems.WOOD_CHIP.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                         output.accept(ModItems.WOODEN_PICKAXE.get());
                         output.accept(ModItems.WOODEN_AXE.get());
