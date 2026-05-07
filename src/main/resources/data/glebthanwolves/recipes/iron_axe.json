@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "##",
+    "#/",
+    " ~"
+  ],
+  "key": {
+    "#": { "item": "minecraft:iron_ingot" },
+    "/": { "item": "minecraft:stick" },
+    "~": { "item": "glebthanwolves:plant_cordage" }
+  },
+  "result": {
+    "item": "glebthanwolves:iron_axe",
+    "count": 1
+  }
+}

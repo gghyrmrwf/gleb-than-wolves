@@ -555,6 +555,29 @@ expressed in source form rather than compiled form.
 - **Visual identity.** Models point at vanilla textures; new GTW stone
   tools are visually indistinguishable from vanilla in inventory.
 
+### Phase 2.2.x — Crude wooden + iron tools
+
+User asked to finish the GTW tool set "from wood through iron" before
+resuming progression work:
+> "давай закончим с модовыми инструментами, хочу чтобы уже были готовы
+> деревянные, каменные и железные инструменты, модельки можешь взять
+> как у ванильных инструментов(потом изменим)"
+
+Translation: finish the mod tools, want wooden / stone / iron ready,
+models can reuse vanilla textures (we'll replace later).
+
+The PR mirrors the Phase 2.2 stone pattern: same "Crude" naming, same
+~50% durability vs vanilla, ~75% mining speed vs vanilla, identical
+HUD attack damage and attack speed (vanilla baselines). Two new tiers
+in `GtwTiers.java` (`GTW_WOODEN`, `GTW_IRON`) plus 10 new tools in
+`ModItems.java`. Recipes follow the same shape as Phase 2.2 stone with
+material swapped (planks tag for wood, iron_ingot for iron); all require
+`plant_cordage` to gate the entire tier set behind the bushcraft chain.
+
+The existing `primitive_axe` (Phase 1.1) is kept as a separate starter
+item — it's flint-based and represents a "found in survival" kind of
+tool, distinct from the workbench-crafted `wooden_axe`.
+
 ### Phase 2.3a — Mining gate (default-deny scaffold, EMPTY whitelist)
 
 **User pivot away from "found tools weaker":** the Phase 2.3 plan in

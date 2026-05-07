@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "#",
+    "#",
+    "~"
+  ],
+  "key": {
+    "#": { "tag": "minecraft:planks" },
+    "~": { "item": "glebthanwolves:plant_cordage" }
+  },
+  "result": {
+    "item": "glebthanwolves:wooden_sword",
+    "count": 1
+  }
+}

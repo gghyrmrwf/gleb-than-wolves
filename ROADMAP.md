@@ -132,6 +132,16 @@ shippable as a PR.
 - Implementation: `forge:false` recipe override JSONs, identical pattern to
   Phase 2.0.
 
+### Phase 2.2.x — Crude wooden + iron tools ✅ done
+
+Finishes the GTW tool set up through iron, using the same "Crude" pattern
+as Phase 2.2: vanilla baselines, ~50% durability, ~75% mining speed,
+vanilla textures reused. 10 new items (5 wood + 5 iron) plus two new
+tiers (`GTW_WOODEN`, `GTW_IRON`) in `GtwTiers.java`. Recipes use planks
+or iron_ingot + stick + plant_cordage (cordage replaces one stick;
+sword has no stick at all). Models reuse vanilla textures
+(`minecraft:item/wooden_*`, `minecraft:item/iron_*`).
+
 ### Phase 2.2 — Crude stone tools ✅ done
 
 First GTW tier of real (mineable) tools. 5 items registered
