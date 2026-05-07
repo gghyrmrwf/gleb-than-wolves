@@ -167,14 +167,54 @@ bushcraft chain. Models reuse vanilla textures.
    Only the lang label (`Crude Stone *`) marks them. Acceptable for now;
    may want unique textures later.
 
-### Phase 2.3 — Found tools weaker (planned)
+### Phase 2.3a — Mining gate scaffold (default-deny, EMPTY whitelist) ⏳ in-PR
 
-User's idea: vanilla tools are no longer crafted, only **found** in the
-world (chests, mob drops, structure loot, fishing). Found tools should be
-**weaker** than mod-crafted equivalents to push the player toward the GTW
-craft tree once it exists.
+Inverts the vanilla "all blocks breakable, only tier-gated" rule. Now
+**all blocks are unbreakable** by default, and each tier has a datapack
+whitelist (`glebthanwolves:breakable_by/<tier>`) of allowed blocks. Higher
+tiers include lower tiers via tag-include.
 
-**Proposed mechanics (subject to user approval before implementation):**
+The PR ships the gate **with empty whitelists** by user decision — no
+block is allowed for any tier yet. Spawn is intentionally a soft-lock
+until follow-up PRs unlock blocks one at a time.
+
+Implementation: `events/MiningGate.java` (Forge `PlayerEvent.BreakSpeed`
++ `BlockEvent.BreakEvent`), 6 tag files, registered handler.
+
+### Phase 2.3b — Block shards (planned, variant A)
+
+Every block in the game eventually drops **shards** instead of itself. To
+recombine a block, the player needs more shards than the block dropped —
+50% loss at the recombine step (block drops 2 shards, recipe is 4 shards
+→ 1 block).
+
+Variant A confirmed by user: **one universal `glebthanwolves:stone_shard`**
+covers the entire stone family (stone, cobblestone, granite, andesite,
+diorite, deepslate, and tuff/calcite/etc.). Per-block shards may be added
+later only for specific blocks where the loss of identity matters
+(e.g. `iron_shard` for iron-tier ores, `diamond_shard` for end-game).
+
+First scope: **only stone family** (~10 blocks). Implementation:
+1. New item `glebthanwolves:stone_shard`.
+2. New GLM `BlockShardModifier` (similar to `AddItemModifier` but
+   replaces the block's drops with `stone_shard × 2`).
+3. GLM rules: tag `glebthanwolves:has_stone_shard` lists every block
+   that should drop the shard.
+4. Recipe: 4 stone_shard → 1 cobblestone (shaped 2×2).
+5. Silk-touch carve-out (Q6): if held tool has `Enchantments.SILK_TOUCH`,
+   skip the GLM and let vanilla drop the original block. This preserves
+   silk-touch as a high-tier shortcut.
+
+### Phase 2.3c — Found tools weaker (planned, deferred)
+
+User said in chat (Q7): "пока ничего не делаем, а потом заменим спавн на
+наши инструменты" — i.e. found-vanilla-tool weakening is **deferred** in
+favor of replacing the spawn (structure loot tables in Phase 2.7) so that
+vanilla tools don't appear at all. The mechanics below are kept as a
+fallback in case structure-loot replacement turns out to leak vanilla
+tools through some path.
+
+**Fallback mechanics:**
 
 1. **NBT-tag at pickup.** The first time a player picks up a vanilla tool,
    we set `GTWFoundTool=true` on the stack via `EntityItemPickupEvent` /
@@ -184,7 +224,9 @@ craft tree once it exists.
    `GTWFoundTool=true`, multiply `event.getAmount()` by 0.5. Tool deals
    half its base damage.
 3. **Break-speed scaling.** `PlayerEvent.BreakSpeed`: if held item has
-   `GTWFoundTool=true`, multiply `event.getNewSpeed()` by 0.5.
+   `GTWFoundTool=true`, multiply `event.getNewSpeed()` by 0.5. (Stacks
+   with the Mining Gate from Phase 2.3a, which sets speed to 0 if the
+   tool's tier disallows the block.)
 4. **Faster wear.** On each tool use that consumes durability, also call
    `stack.hurtAndBreak(1, ...)` an extra time → tool breaks 2× faster.
 5. **HUD hint.** Optional: lore line on the item like `"§7Found tool — half

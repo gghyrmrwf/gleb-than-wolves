@@ -512,6 +512,93 @@ under "Phase 2.2 — open issue" in ROADMAP.
 
 ---
 
+## Phase 2.3a — Mining gate (default-deny scaffold, EMPTY whitelist)
+
+**Concept:** instead of "all blocks breakable, but some require a higher
+tool tier" (vanilla), the mod inverts the rule: **all blocks are
+unbreakable by default**, and each tool tier has an explicit datapack
+whitelist of blocks it is allowed to break. This makes blocks themselves
+into a designed resource — adding a block to the game now requires an
+explicit decision about which tool tier may harvest it.
+
+This is the first half of the user's "blocks-as-currency" redesign. The
+second half (every block drops *shards* instead of itself, recombined via
+crafting) lands in Phase 2.3b. Variant for shards: **A — one universal
+`stone_shard`** (decided in chat); separate per-block shards may be
+introduced later only for items that need them.
+
+**This PR ships the gate with an EMPTY whitelist.** The infrastructure is
+fully wired up, but no block is allowed for any tier — by user decision
+("я написал полный вайтлист, это значит ПОЛНЫЙ, всё блокируй"). After
+this PR is merged, blocks will be unlocked one-by-one in follow-up PRs as
+gameplay design progresses.
+
+**Files:**
+- `events/MiningGate.java` — Forge event handler. Subscribes to two events:
+  - `PlayerEvent.BreakSpeed` → if the held tool's tier cannot break the
+    block, sets break speed to `0.0F` (block appears unbreakable, no
+    crack animation, no progress bar). This is the visible feedback.
+  - `BlockEvent.BreakEvent` → defense-in-depth cancel if a break would
+    somehow proceed despite speed=0 (other mods, NBT shenanigans, etc.).
+  - Tool tier is `TieredItem.getTier().getLevel() + 1`, so vanilla
+    WOOD=1=primitive, STONE=2, IRON=3, DIAMOND=4, NETHERITE=5. Held items
+    that aren't `TieredItem` (bows, fiber, cordage, bare hand) report
+    tier 0 (hand). GTW `stone_*` and vanilla `stone_*` both map to tier
+    2, so found vanilla tools work the same as crafted GTW tools (until
+    Phase 2.3 — found tools weaker — replaces them).
+  - Creative players bypass the gate entirely.
+- `data/glebthanwolves/tags/blocks/breakable_by/hand.json` — empty
+  (`"values": []`).
+- `data/glebthanwolves/tags/blocks/breakable_by/primitive.json` — only
+  inherits from `hand` via `"#glebthanwolves:breakable_by/hand"`. Same
+  effective content (empty).
+- `data/glebthanwolves/tags/blocks/breakable_by/stone.json` — only
+  inherits from `primitive`. Empty.
+- `data/glebthanwolves/tags/blocks/breakable_by/iron.json` — only
+  inherits from `stone`. Empty.
+- `data/glebthanwolves/tags/blocks/breakable_by/diamond.json` — only
+  inherits from `iron`. Empty.
+- `data/glebthanwolves/tags/blocks/breakable_by/netherite.json` — only
+  inherits from `diamond`. Empty.
+- `GlebThanWolves.java` — registers `new MiningGate()` on the Forge event
+  bus alongside the existing handlers.
+
+The tag-include chain (`netherite ⊃ diamond ⊃ iron ⊃ stone ⊃ primitive ⊃
+hand`) is wired up so that adding a block to (e.g.) `stone.json` automatically
+makes it breakable by stone-, iron-, diamond-, and netherite-tier tools too.
+That means future PRs only edit a single tag at the appropriate tier.
+
+**Effect on gameplay (intended, per user request):**
+- A surviving player at spawn can break **nothing**, including grass,
+  dirt, sand, leaves, logs, etc. Plant_fiber (the entry to bushcraft) is
+  unobtainable until grass is added to the hand whitelist.
+- Mob drops, fishing, chest loot, spawn inventory still work. The gate
+  only restricts block breaking.
+- Crafting still works.
+- Creative is fully unaffected.
+
+This is **deliberately a soft-lock at spawn** — it's the starting point
+from which we will design out, allowing one block at a time.
+
+**Interaction with other mechanics:**
+- `BushcraftBreakEvents` (Phase 1.1, "logs need axe") still runs as a
+  redundant safety net. With logs now blocked by hand-tier too (they're
+  in the empty whitelist), the bushcraft check is moot — but it stays
+  for now, in case logs are unlocked at hand-tier later.
+- Vanilla `correctToolForDrops` is left untouched, so even if a tool
+  *can break* a block under the gate, the block may still drop nothing
+  if the tool is the wrong type (e.g. iron shovel breaks iron_ore at
+  iron tier but yields no ingot — same as vanilla).
+
+**Open issues carried into Phase 2.3b+:**
+- **Whitelist needs to be filled.** Until at least short_grass (or
+  similar) is unlocked at hand tier, a player cannot start the bushcraft
+  chain. Decide first batch of allowed blocks per tier.
+- **No silk-touch carve-out yet.** The "silk-touch bypasses shards" rule
+  (Q6) doesn't matter until Phase 2.3b ships shards.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
