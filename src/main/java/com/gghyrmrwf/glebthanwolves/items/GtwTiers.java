@@ -21,6 +21,9 @@ import net.minecraft.world.item.crafting.Ingredient;
  *   <li>{@link #GTW_IRON} — Phase 2.2.x. Mirrors {@code Tiers.IRON}
  *       (level 2, +2.0 dmg). Durability 130 (vs 250), speed 4.5 (vs 6.0),
  *       enchantability 14 (same), repair = iron_ingot.</li>
+ *   <li>{@link #GTW_DIAMOND} — Phase 2.2.y. Mirrors {@code Tiers.DIAMOND}
+ *       (level 3, +3.0 dmg). Durability 780 (vs 1561), speed 6.0 (vs 8.0),
+ *       enchantability 10 (same), repair = diamond.</li>
  * </ul>
  */
 public final class GtwTiers {
@@ -83,6 +86,26 @@ public final class GtwTiers {
 
         @Override
         public Ingredient getRepairIngredient() { return Ingredient.of(Items.IRON_INGOT); }
+    };
+
+    public static final Tier GTW_DIAMOND = new Tier() {
+        @Override
+        public int getUses() { return 780; }
+
+        @Override
+        public float getSpeed() { return 6.0F; }
+
+        @Override
+        public float getAttackDamageBonus() { return 3.0F; }
+
+        @Override
+        public int getLevel() { return 3; }
+
+        @Override
+        public int getEnchantmentValue() { return 10; }
+
+        @Override
+        public Ingredient getRepairIngredient() { return Ingredient.of(Items.DIAMOND); }
     };
 
     private GtwTiers() {}
