@@ -1,0 +1,9 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/machine_scrap",
+  "shard_item": "glebthanwolves:machine_scrap",
+  "count": 2,
+  "mode": "replace",
+  "tool_action": "pickaxe_dig"
+}

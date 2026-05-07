@@ -1,11 +1,32 @@
 {
   "replace": false,
   "entries": [
-    "glebthanwolves:grass_to_fiber",
+    "glebthanwolves:shard_organic_fiber",
+    "glebthanwolves:shard_leaf_fragment",
+    "glebthanwolves:shard_dirt_chunk",
+    "glebthanwolves:shard_sand_pile",
+    "glebthanwolves:shard_gravel_piece",
+    "glebthanwolves:shard_snow_chunk",
+    "glebthanwolves:shard_cloth_piece",
+    "glebthanwolves:shard_wood_chip",
+    "glebthanwolves:shard_stone_fragment",
+    "glebthanwolves:shard_brick_fragment",
+    "glebthanwolves:shard_glass_shard",
+    "glebthanwolves:shard_ceramic_piece",
+    "glebthanwolves:shard_deepstone_fragment",
+    "glebthanwolves:shard_nether_fragment",
+    "glebthanwolves:shard_iron_fragment",
+    "glebthanwolves:shard_concrete_dust",
+    "glebthanwolves:shard_gold_fragment",
+    "glebthanwolves:shard_emerald_fragment",
+    "glebthanwolves:shard_diamond_fragment",
+    "glebthanwolves:shard_quartz_fragment",
+    "glebthanwolves:shard_hard_brick_fragment",
+    "glebthanwolves:shard_compressed_metal_fragment",
+    "glebthanwolves:shard_machine_scrap",
+    "glebthanwolves:shard_ancient_fragment",
+    "glebthanwolves:shard_precious_fragment",
     "glebthanwolves:leaves_to_stick",
-    "glebthanwolves:nerf_saplings",
-    "glebthanwolves:logs_remove",
-    "glebthanwolves:logs_to_chunks",
-    "glebthanwolves:logs_to_sticks"
+    "glebthanwolves:nerf_saplings"
   ]
 }

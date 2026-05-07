@@ -1,0 +1,8 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/sand_pile",
+  "shard_item": "glebthanwolves:sand_pile",
+  "count": 2,
+  "mode": "replace"
+}

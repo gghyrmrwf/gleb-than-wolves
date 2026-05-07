@@ -1,0 +1,9 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/wood_chip",
+  "shard_item": "glebthanwolves:wood_chip",
+  "count": 2,
+  "mode": "replace",
+  "tool_action": "axe_dig"
+}

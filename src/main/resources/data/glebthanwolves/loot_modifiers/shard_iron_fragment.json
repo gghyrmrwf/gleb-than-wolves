@@ -1,0 +1,9 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/iron_fragment",
+  "shard_item": "glebthanwolves:iron_fragment",
+  "count": 2,
+  "mode": "replace",
+  "tool_action": "pickaxe_dig"
+}
