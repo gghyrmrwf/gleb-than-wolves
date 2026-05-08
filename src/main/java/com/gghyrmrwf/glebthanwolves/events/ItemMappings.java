@@ -25,7 +25,7 @@ import java.util.Map;
  *       {@code glebthanwolves:wood_chip}</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(modid = GlebThanWolves.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid = GlebThanWolves.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ItemMappings {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemMappings.class);
