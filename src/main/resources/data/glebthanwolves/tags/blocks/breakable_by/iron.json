@@ -1,6 +1,19 @@
 {
   "replace": false,
   "values": [
-    "#glebthanwolves:breakable_by/stone"
+    "#glebthanwolves:breakable_by/stone",
+
+    "#glebthanwolves:shard/gold_fragment",
+    "#glebthanwolves:shard/emerald_fragment",
+    "#glebthanwolves:shard/diamond_fragment",
+    "#glebthanwolves:shard/quartz_fragment",
+    "#glebthanwolves:shard/hard_brick_fragment",
+    "#glebthanwolves:shard/compressed_metal_fragment",
+    "#glebthanwolves:shard/machine_scrap",
+
+    "minecraft:lantern",
+    "minecraft:soul_lantern",
+    "minecraft:ender_chest",
+    "minecraft:conduit"
   ]
 }

@@ -16,9 +16,32 @@ public final class ModCreativeTabs {
                     .title(Component.translatable("itemGroup." + GlebThanWolves.MODID))
                     .icon(() -> new ItemStack(ModItems.PRIMITIVE_AXE.get()))
                     .displayItems((params, output) -> {
-                        output.accept(ModItems.PLANT_FIBER.get());
+                        // Phase 2.3b shards
+                        output.accept(ModItems.ORGANIC_FIBER.get());
+                        output.accept(ModItems.DIRT_CHUNK.get());
+                        output.accept(ModItems.SAND_PILE.get());
+                        output.accept(ModItems.SNOW_CHUNK.get());
+                        output.accept(ModItems.WOOD_CHIP.get());
+                        output.accept(ModItems.STONE_FRAGMENT.get());
+                        output.accept(ModItems.DEEPSTONE_FRAGMENT.get());
+                        output.accept(ModItems.NETHER_FRAGMENT.get());
+                        output.accept(ModItems.IRON_FRAGMENT.get());
+                        output.accept(ModItems.GOLD_FRAGMENT.get());
+                        output.accept(ModItems.EMERALD_FRAGMENT.get());
+                        output.accept(ModItems.DIAMOND_FRAGMENT.get());
+                        output.accept(ModItems.QUARTZ_FRAGMENT.get());
+                        output.accept(ModItems.ANCIENT_FRAGMENT.get());
+                        output.accept(ModItems.BRICK_FRAGMENT.get());
+                        output.accept(ModItems.HARD_BRICK_FRAGMENT.get());
+                        output.accept(ModItems.GLASS_SHARD.get());
+                        output.accept(ModItems.CERAMIC_PIECE.get());
+                        output.accept(ModItems.CONCRETE_DUST.get());
+                        output.accept(ModItems.COMPRESSED_METAL_FRAGMENT.get());
+                        output.accept(ModItems.PRECIOUS_FRAGMENT.get());
+                        output.accept(ModItems.MACHINE_SCRAP.get());
+                        // Phase 1.1 craft intermediate
                         output.accept(ModItems.PLANT_CORDAGE.get());
-                        output.accept(ModItems.WOOD_CHUNK.get());
+                        // Tools
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                         output.accept(ModItems.WOODEN_PICKAXE.get());
                         output.accept(ModItems.WOODEN_AXE.get());

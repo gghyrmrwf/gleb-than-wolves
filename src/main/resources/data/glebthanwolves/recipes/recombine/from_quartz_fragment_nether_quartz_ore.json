@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "X X",
+    "XXX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:quartz_fragment"}
+  },
+  "result": {
+    "item": "minecraft:nether_quartz_ore",
+    "count": 1
+  }
+}

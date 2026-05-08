@@ -34,8 +34,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
  * tool above it.
  *
  * <p>If the held item is not a {@link TieredItem}, the player is treated as
- * having tier 0 (hand). This means bows, fishing rods, plant_fiber, etc. all
- * count as bare hands for mining purposes.
+ * having tier 0 (hand). This means bows, fishing rods, organic_fiber, etc.
+ * all count as bare hands for mining purposes.
  *
  * <p>Vanilla {@code correctToolForDrops} is left untouched, so even if a tool
  * can <em>break</em> a block under this gate, the block may still drop nothing

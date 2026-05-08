@@ -1,0 +1,9 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/glass_shard",
+  "shard_item": "glebthanwolves:glass_shard",
+  "count": 2,
+  "mode": "replace",
+  "tool_action": "pickaxe_dig"
+}

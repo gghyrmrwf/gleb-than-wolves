@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:dirt_chunk"},
+    {"item": "glebthanwolves:dirt_chunk"},
+    {"item": "glebthanwolves:dirt_chunk"},
+    {"item": "glebthanwolves:dirt_chunk"}
+  ],
+  "result": {
+    "item": "minecraft:clay_ball",
+    "count": 4
+  }
+}

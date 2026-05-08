@@ -203,11 +203,15 @@ advancements aren't generated, models reuse vanilla textures, mining
 gate is still empty so the tools can be crafted but cannot break any
 block until Phase 2.3b lands.
 
-### Phase 2.3b — Block shards + 24-category mining logic (planned, in-design)
+### Phase 2.3b — Block shards + 25-category mining logic ✅done
 
 User's final design pivot (replaces the earlier "variant A, universal
-stone_shard" idea): **24 distinct shard items**, one per block family.
-The full design is in `MINING_DESIGN.md` (also linked from `HISTORY.md`).
+stone_shard" idea): **24 distinct shard items + 1 split for ores**,
+one per block family. The full design is in `MINING_DESIGN.md`. The
+implementation landed as a single big PR (#8) with 8 commits — see
+`CHANGELOG.md` for the per-file inventory and `HISTORY.md` for the
+chat history that produced the seven user answers.
+
 Summary of categories:
 
 | # | Category | Drop | Tier (mine) |

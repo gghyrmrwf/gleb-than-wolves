@@ -1,6 +1,17 @@
 {
   "replace": false,
   "values": [
-    "#glebthanwolves:breakable_by/hand"
+    "#glebthanwolves:breakable_by/hand",
+
+    "#glebthanwolves:shard/wood_chip",
+    "#glebthanwolves:shard/stone_fragment",
+    "#glebthanwolves:shard/brick_fragment",
+    "#glebthanwolves:shard/glass_shard",
+    "#glebthanwolves:shard/ceramic_piece",
+
+    "minecraft:coal_ore",
+    "minecraft:deepslate_coal_ore",
+    "minecraft:copper_ore",
+    "minecraft:deepslate_copper_ore"
   ]
 }

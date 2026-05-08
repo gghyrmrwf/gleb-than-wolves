@@ -16,14 +16,78 @@ public final class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, GlebThanWolves.MODID);
 
-    public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber",
+    public static final RegistryObject<Item> ORGANIC_FIBER = ITEMS.register("organic_fiber",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> PLANT_CORDAGE = ITEMS.register("plant_cordage",
             () -> new Item(new Item.Properties()));
 
-    public static final RegistryObject<Item> WOOD_CHUNK = ITEMS.register("wood_chunk",
+    public static final RegistryObject<Item> WOOD_CHIP = ITEMS.register("wood_chip",
             () -> new Item(new Item.Properties()));
+
+    // --- Phase 2.3b shard items (one per block category) ---
+
+    public static final RegistryObject<Item> DIRT_CHUNK = ITEMS.register("dirt_chunk",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> SAND_PILE = ITEMS.register("sand_pile",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> SNOW_CHUNK = ITEMS.register("snow_chunk",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> STONE_FRAGMENT = ITEMS.register("stone_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> DEEPSTONE_FRAGMENT = ITEMS.register("deepstone_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> IRON_FRAGMENT = ITEMS.register("iron_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> GOLD_FRAGMENT = ITEMS.register("gold_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> EMERALD_FRAGMENT = ITEMS.register("emerald_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> DIAMOND_FRAGMENT = ITEMS.register("diamond_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> QUARTZ_FRAGMENT = ITEMS.register("quartz_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> ANCIENT_FRAGMENT = ITEMS.register("ancient_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> NETHER_FRAGMENT = ITEMS.register("nether_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> BRICK_FRAGMENT = ITEMS.register("brick_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> HARD_BRICK_FRAGMENT = ITEMS.register("hard_brick_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> GLASS_SHARD = ITEMS.register("glass_shard",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> CERAMIC_PIECE = ITEMS.register("ceramic_piece",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> CONCRETE_DUST = ITEMS.register("concrete_dust",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> COMPRESSED_METAL_FRAGMENT = ITEMS.register("compressed_metal_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> PRECIOUS_FRAGMENT = ITEMS.register("precious_fragment",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> MACHINE_SCRAP = ITEMS.register("machine_scrap",
+            () -> new Item(new Item.Properties()));
+
+    // --- Tools ---
 
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",
             () -> new PrimitiveAxeItem(PrimitiveAxeItem.PRIMITIVE_TIER, 5.0f, -3.2f,

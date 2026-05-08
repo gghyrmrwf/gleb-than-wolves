@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:quartz_fragment"},
+    {"item": "glebthanwolves:quartz_fragment"},
+    {"item": "glebthanwolves:quartz_fragment"},
+    {"item": "glebthanwolves:quartz_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:quartz",
+    "count": 1
+  }
+}

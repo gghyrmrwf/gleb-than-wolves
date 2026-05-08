@@ -1,6 +1,7 @@
 package com.gghyrmrwf.glebthanwolves;
 
 import com.gghyrmrwf.glebthanwolves.glm.AddItemModifier;
+import com.gghyrmrwf.glebthanwolves.glm.BlockShardModifier;
 import com.gghyrmrwf.glebthanwolves.glm.MultiplyItemModifier;
 import com.mojang.serialization.Codec;
 import net.minecraftforge.common.loot.IGlobalLootModifier;
@@ -17,6 +18,9 @@ public final class ModLootModifiers {
 
     public static final RegistryObject<Codec<MultiplyItemModifier>> MULTIPLY_ITEM =
             GLM_SERIALIZERS.register("multiply_item", () -> MultiplyItemModifier.CODEC);
+
+    public static final RegistryObject<Codec<BlockShardModifier>> BLOCK_SHARD =
+            GLM_SERIALIZERS.register("block_shard", () -> BlockShardModifier.CODEC);
 
     private ModLootModifiers() {}
 }

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:diamond_fragment"},
+    {"item": "glebthanwolves:diamond_fragment"},
+    {"item": "glebthanwolves:diamond_fragment"},
+    {"item": "glebthanwolves:diamond_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:diamond",
+    "count": 1
+  }
+}

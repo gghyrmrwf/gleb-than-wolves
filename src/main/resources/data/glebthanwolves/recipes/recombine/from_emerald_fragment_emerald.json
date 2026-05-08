@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:emerald_fragment"},
+    {"item": "glebthanwolves:emerald_fragment"},
+    {"item": "glebthanwolves:emerald_fragment"},
+    {"item": "glebthanwolves:emerald_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:emerald",
+    "count": 1
+  }
+}

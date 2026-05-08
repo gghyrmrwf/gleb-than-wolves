@@ -1,0 +1,9 @@
+{
+  "type": "glebthanwolves:block_shard",
+  "conditions": [],
+  "block_tag": "glebthanwolves:shard/brick_fragment",
+  "shard_item": "glebthanwolves:brick_fragment",
+  "count": 2,
+  "mode": "replace",
+  "tool_action": "pickaxe_dig"
+}

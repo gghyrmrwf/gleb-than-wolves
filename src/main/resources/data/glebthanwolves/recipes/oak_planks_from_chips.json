@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "glebthanwolves:wood_chip"
+    },
+    {
+      "item": "glebthanwolves:wood_chip"
+    }
+  ],
+  "result": {
+    "item": "minecraft:oak_planks",
+    "count": 1
+  }
+}

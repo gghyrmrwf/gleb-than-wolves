@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:machine_scrap"},
+    {"item": "glebthanwolves:machine_scrap"},
+    {"item": "glebthanwolves:machine_scrap"},
+    {"item": "glebthanwolves:machine_scrap"}
+  ],
+  "result": {
+    "item": "minecraft:rail",
+    "count": 8
+  }
+}

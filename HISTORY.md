@@ -730,6 +730,96 @@ combine back into "полноценные куски"):
 6. `MINING_DESIGN.md` design doc with the full ~750-block annotated
    list, before code lands.
 
+### Phase 2.3b — Implementation
+
+After PR #7 (design only) the user told Devin to start the actual
+code, with the explicit instruction "потрать на это сколько надо
+времени, максимально внимательно и подробно учитывая все проблемы".
+Before coding Devin asked seven follow-up questions (translated to
+Russian for the user's comfort) and the user answered:
+
+1. Per-mineral shards only for valuable ores (iron / gold / emerald /
+   diamond / quartz / ancient_debris). Coal / copper / lapis /
+   redstone keep vanilla drops, mining-gate enforces the tier on
+   them.
+2. Skip non-essential decorative blocks — keep vanilla self-drop with
+   a tier carve-out in the mining gate. Reduces the "everything has
+   a unique shard" item bloat.
+3. Shulker boxes excluded from the shard system (vanilla self-drop
+   preserves the inventory inside).
+4. Workshop stations cost 8 shards rather than 4 — losing a station
+   "болит", as in BTW.
+5. Recipe advancements deferred to a separate clean-up PR (this also
+   fixes the same advancement gap from Phases 2.0 / 2.1 / 2.2 /
+   2.2.x / 2.2.y).
+6. Rename `plant_fiber` → `organic_fiber` with an in-save alias so
+   nothing in old worlds breaks.
+7. Organic / leaves / gravel categories use `additive` mode so
+   the food chain (saplings, sticks, flint, etc.) keeps working.
+
+The implementation landed inside one big PR (#8), with three
+mid-implementation course-corrections after user feedback:
+
+**Initial implementation (8 commits)** \
+Began with 25 shard families covering essentially every breakable
+block type — `organic_fiber` / `leaf_fragment` / `gravel_piece` /
+`cloth_piece` / etc. all included, with grass / leaves / gravel
+flagged as `additive` mode (vanilla drop + extra shard) so saplings
+/ flint / vanilla plant drops would still work.
+
+**Course-corrections** (after the user reviewed the in-progress
+implementation):
+
+1. *"зачем травы, гравий и листья будут падать осколками? это
+   сломает мод и очень глупо"* — User pointed out that doubling
+   vanilla drops with extra shards is illogical. Devin proposed
+   removing all hand-tier shards (over-correction).
+2. *"я же писал что это не должно ломать мод, листья и травы важны
+   в моде для развития"* — User clarified: only what's required
+   for early progression should stay vanilla. Dirt / sand / snow /
+   wool don't break the mod and could keep shards.
+3. *"зачем тебе шерсть в осколках, как ты это вообще представляешь?
+   это совсем не логично, осколки могут быть из руды, твёрдых
+   блоков, земли и т.д, каким боком тут шерсть"* — Final principle:
+   shards only from hard / granular materials. Wool removed.
+
+**Final shape:**
+
+1. **Rename items** — `plant_fiber` → `organic_fiber`, `wood_chunk`
+   → `wood_chip` with `MissingMappingsEvent` migration.
+2. **18 new shard items + models + lang** (`dirt_chunk`, `sand_pile`,
+   `snow_chunk`, `wood_chip`, `stone_fragment`, `deepstone_fragment`,
+   `nether_fragment`, `iron_fragment`, `gold_fragment`,
+   `emerald_fragment`, `diamond_fragment`, `quartz_fragment`,
+   `ancient_fragment`, `brick_fragment`, `hard_brick_fragment`,
+   `glass_shard`, `ceramic_piece`, `concrete_dust`,
+   `compressed_metal_fragment`, `precious_fragment`, `machine_scrap`).
+3. **`BlockShardModifier`** custom GLM: per-tag, per-shard, optional
+   tool action gate, `replace` / `additive` mode (only `replace` is
+   used in the final design), silk-touch bypass. Registered in
+   `ModLootModifiers.java`.
+4. **18 block tags** at `data/glebthanwolves/tags/blocks/shard/<name>.json`
+   listing every block in each shard family.
+5. **18 GLM JSONs** at `data/glebthanwolves/loot_modifiers/shard_<name>.json`
+   wiring the shard tags to the modifier. Phase 1.1 `grass_to_fiber`
+   GLM kept (extended to cover short_grass / fern); Phase 1.2
+   `logs_remove` / `logs_to_chips` / `logs_to_sticks` superseded by
+   `shard_wood_chip` (replace mode + axe_dig action).
+6. **Mining-gate population**: the 5 `breakable_by/{hand,primitive,
+   stone,iron,diamond}.json` tags from Phase 2.3a are now populated
+   with the shard tags plus carve-outs (leaves, grass / organics,
+   gravel, wool, crops, sponges, hay, candles, torches, beds,
+   banners, shulker boxes, mob heads, excluded ores, lantern,
+   ender_chest, conduit). Default-deny is now functional.
+7. **151 recombine recipes** under `data/glebthanwolves/recipes/
+   recombine/from_<shard>_<output>.json`. 4 shards (2×2) → 1 block;
+   8 shards (3×3 with center empty) → 1 station.
+8. **Doc updates** (`CHANGELOG.md`, `HISTORY.md`, `ROADMAP.md`).
+
+**No netherite content**: the `breakable_by/netherite` tag is left
+inheriting `breakable_by/diamond`. Diamond is the effective ceiling
+until netherite tools are added.
+
 **Important security policy reminder added in this session:**
 > "если ты взял что-то сторонние то должен отчитаться"
 > "только код который ты вставляешь или мод который ты находишь должен быть

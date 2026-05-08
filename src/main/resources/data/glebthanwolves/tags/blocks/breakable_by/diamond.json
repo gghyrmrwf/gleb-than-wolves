@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "#glebthanwolves:breakable_by/iron"
+    "#glebthanwolves:breakable_by/iron",
+
+    "#glebthanwolves:shard/ancient_fragment",
+    "#glebthanwolves:shard/precious_fragment"
   ]
 }

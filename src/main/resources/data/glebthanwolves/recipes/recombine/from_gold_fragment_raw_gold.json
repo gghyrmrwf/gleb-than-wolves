@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:gold_fragment"},
+    {"item": "glebthanwolves:gold_fragment"},
+    {"item": "glebthanwolves:gold_fragment"},
+    {"item": "glebthanwolves:gold_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:raw_gold",
+    "count": 1
+  }
+}
