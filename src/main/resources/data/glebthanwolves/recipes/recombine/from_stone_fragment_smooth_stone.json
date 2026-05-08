@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XX",
+    "XX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:stone_fragment"}
+  },
+  "result": {
+    "item": "minecraft:smooth_stone",
+    "count": 1
+  }
+}

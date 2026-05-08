@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:iron_fragment"},
+    {"item": "glebthanwolves:iron_fragment"},
+    {"item": "glebthanwolves:iron_fragment"},
+    {"item": "glebthanwolves:iron_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:raw_iron",
+    "count": 1
+  }
+}

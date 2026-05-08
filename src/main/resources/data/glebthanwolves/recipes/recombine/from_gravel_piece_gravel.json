@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XX",
+    "XX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:gravel_piece"}
+  },
+  "result": {
+    "item": "minecraft:gravel",
+    "count": 1
+  }
+}

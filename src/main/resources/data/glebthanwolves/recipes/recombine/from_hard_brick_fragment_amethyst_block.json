@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XX",
+    "XX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:hard_brick_fragment"}
+  },
+  "result": {
+    "item": "minecraft:amethyst_block",
+    "count": 1
+  }
+}

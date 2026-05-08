@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "X X",
+    "XXX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:emerald_fragment"}
+  },
+  "result": {
+    "item": "minecraft:emerald_ore",
+    "count": 1
+  }
+}

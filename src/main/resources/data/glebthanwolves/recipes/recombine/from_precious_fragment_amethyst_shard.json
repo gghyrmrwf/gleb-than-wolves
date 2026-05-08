@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:precious_fragment"},
+    {"item": "glebthanwolves:precious_fragment"},
+    {"item": "glebthanwolves:precious_fragment"},
+    {"item": "glebthanwolves:precious_fragment"}
+  ],
+  "result": {
+    "item": "minecraft:amethyst_shard",
+    "count": 4
+  }
+}

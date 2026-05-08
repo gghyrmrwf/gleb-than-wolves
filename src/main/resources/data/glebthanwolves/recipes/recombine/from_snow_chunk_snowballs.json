@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "glebthanwolves:snow_chunk"},
+    {"item": "glebthanwolves:snow_chunk"},
+    {"item": "glebthanwolves:snow_chunk"},
+    {"item": "glebthanwolves:snow_chunk"}
+  ],
+  "result": {
+    "item": "minecraft:snowball",
+    "count": 4
+  }
+}

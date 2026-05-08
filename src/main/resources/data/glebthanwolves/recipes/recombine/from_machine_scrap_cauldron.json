@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XX",
+    "XX"
+  ],
+  "key": {
+    "X": {"item": "glebthanwolves:machine_scrap"}
+  },
+  "result": {
+    "item": "minecraft:cauldron",
+    "count": 1
+  }
+}
