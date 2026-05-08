@@ -729,6 +729,69 @@ vanilla recipe overrides from Phase 2.0 / 2.1, all earlier Phase 2.2 /
 
 ---
 
+## Phase 2.3b — Block shards (DELIVERED, then ROLLED BACK)
+
+**Branch:** `devin/1778192365-phase-2-3b-impl`
+**Design PR:** [#7](https://github.com/gghyrmrwf/gleb-than-wolves/pull/7) — abandoned
+**Impl PR:** [#8](https://github.com/gghyrmrwf/gleb-than-wolves/pull/8) — abandoned
+
+**Built:** 18 shard categories, 151 recombine recipes, populated mining-gate,
+custom GLM codec, item rename via `MissingMappingsEvent`, `MINING_DESIGN.md`
+spec doc.
+
+**Failed because:**
+1. One shard mapped to many recipes → only first alphabetically fired (rest dead).
+2. Overgeneralized categories (`compressed_metal_fragment`, `precious_fragment`)
+   produced thematically nonsensical outputs.
+3. Default-deny `MiningGate` whitelist made too many vanilla blocks unminable
+   in practice ("blocks just don't break").
+
+**User reaction:** "полный мусор без логики, максимальный бред и халатность".
+Demanded full rollback to Phase 2.2.x state.
+
+---
+
+## Phase 2.3 — Tier tightening via vanilla tag overrides (current)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten`
+**PR:** [#9](https://github.com/gghyrmrwf/gleb-than-wolves/pull/9)
+**Replaces:** PR #6 (diamond tools, cherry-picked in), PR #7, PR #8.
+
+**Approach:**
+- Removed `MiningGate.java` + all `breakable_by/*.json` tags.
+- Restored vanilla mining semantics (wrong tool breaks block silently, no drop).
+- Cherry-picked diamond tools (`d61ac87`).
+- Added datapack overrides on vanilla `minecraft:needs_*_tool` tags.
+
+**`needs_iron_tool` (require iron pickaxe to drop):**
+- copper, deepslate_copper (was stone)
+- lapis, deepslate_lapis (was stone)
+- nether_gold (was wood)
+- amethyst_block + budding + 4 cluster/bud states (was wood)
+- end_stone + end_stone_bricks + decorative variants (was wood)
+- bell, anvil + chipped + damaged (was wood)
+- shulker_box + 16 dyed colors (was wood)
+
+**`needs_stone_tool` (require stone pickaxe to drop):**
+- nether_quartz (was wood)
+- magma_block (was wood)
+
+**Glowstone NOT tightened** — vanilla block has no `requiresCorrectToolForDrops`,
+so tag-based tightening has no effect. Would require mixin to fix.
+
+**Progression:**
+```
+hand → primitive_axe → wood pickaxe → stone pickaxe (cobblestone, coal)
+  → iron pickaxe (iron, copper, lapis, nether_gold, amethyst, end_stone, etc.)
+  → diamond pickaxe (obsidian, ancient_debris)
+  → netherite (placeholder, not yet implemented)
+```
+
+**No shards in this PR.** Per user: shards will be added one at a time, only
+for "important" blocks, after this mining-gate is validated stable.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

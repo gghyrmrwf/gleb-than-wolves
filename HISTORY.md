@@ -745,6 +745,160 @@ to be added once any external code is actually used; currently empty).
 
 ---
 
+### Phase 2.3b — Block shards IMPLEMENTATION (delivered, then ROLLED BACK)
+
+**Branch:** `devin/1778192365-phase-2-3b-impl` ([PR #8](https://github.com/gghyrmrwf/gleb-than-wolves/pull/8))
+**Design doc PR:** [PR #7](https://github.com/gghyrmrwf/gleb-than-wolves/pull/7)
+**Status:** ⚠️ Both PRs ABANDONED, replaced by PR #9 (Phase 2.3 tier-tightening).
+
+**What was built (final scope after user trimming):**
+
+- 18 shard categories (down from initial 25): `dirt_chunk`, `sand_pile`,
+  `snow_chunk`, `wood_chip`, `stone_fragment`, `deepstone_fragment`,
+  `nether_fragment`, `iron_fragment`, `gold_fragment`, `emerald_fragment`,
+  `diamond_fragment`, `quartz_fragment`, `ancient_fragment`,
+  `brick_fragment`, `hard_brick_fragment`, `glass_shard`, `ceramic_piece`,
+  `concrete_dust`, `compressed_metal_fragment`, `precious_fragment`,
+  `machine_scrap`.
+- 151 recombine recipes (4 shards → 1 block, 8 shards → 1 station).
+- Populated `breakable_by/*` whitelist tags from Phase 2.3a.
+- `BlockShardModifier` custom GLM codec.
+- `ItemMappings` event handler for old saves
+  (`plant_fiber → organic_fiber`, `wood_chunk → wood_chip`).
+- `MINING_DESIGN.md` (~1200 lines) — full 24-category specification.
+
+**Commits in chronological order:**
+- `e0d6002` — Phase 2.3b (1/8): rename plant_fiber → organic_fiber, wood_chunk → wood_chip
+- `7d4dce6` — Phase 2.3b (2/8): register 23 shard items + models + lang
+- `ebc5928` — Phase 2.3b (3/8): BlockShardModifier custom GLM
+- `3a72710` — Phase 2.3b (4/8): 25 shard-category block tags
+- `75a4afa` — Phase 2.3b (5/8): 25 shard GLM JSONs + remove obsolete Phase 1.1 GLMs
+- `baa61fb` — Phase 2.3b (6/8): populate mining-gate breakable_by tags
+- `f905406` — Phase 2.3b (7/8): 156 recombine recipes
+- `7899c97` — Phase 2.3b (revised): drop leaf/gravel/grass/cloth shards
+- `33cbb9a` — Phase 2.3b: fix MissingMappingsEvent import (in net.minecraftforge.registries)
+- `9d0b88b` — Phase 2.3b: register MissingMappingsEvent on FORGE bus
+
+**Bugs encountered during build/load:**
+
+1. **`MissingMappingsEvent` import path** — I imported from
+   `net.minecraftforge.event.MissingMappingsEvent` but in Forge 1.20.1 it
+   moved to `net.minecraftforge.registries.MissingMappingsEvent`. Fixed in
+   `33cbb9a`.
+
+2. **`MissingMappingsEvent` event bus** — I registered the handler on the
+   MOD event bus (`@Mod.EventBusSubscriber(bus = Bus.MOD)`) but the event
+   fires on the FORGE event bus. Crash:
+   `IllegalArgumentException: Method ... has @SubscribeEvent annotation,
+   but takes an argument that is not a subtype of the base type interface
+   net.minecraftforge.fml.event.IModBusEvent`. Fixed in `9d0b88b` by
+   switching to `Bus.FORGE`.
+
+**Catastrophic gameplay bugs (why this got rolled back):**
+
+User loaded the jar after the bus fix and reported (verbatim):
+
+> «полнейший бред и ужас, блоки от слова совсем не добываются, вообще ничем.
+> кусок снега делает кусок льда, не понятный спрессованный метал делает блок
+> рудного золота(вообще то это за "спрессованный метал" и зачем нужно рудное
+> золото если есть просто золото, драгоценный осколок делает блок редстоуна
+> (что вообще за бред и что это за осколок), металлолом делает вообще наблюдателя
+> (что такое металлолом и почему он делает наблюдателя), почему из горсти песка
+> получается красный песок, из комка земли вообще каменистая земля получается,
+> что за древесная щепка из которой получается не нужный проигрыватель
+> (вообще бред полный), каменный осколок делает андезит, твёрдый кирпичный
+> обломок делает вообще светокамень, а кирпичный обломок делает саманные кирпичи.
+> вообще что ты имеем, ты сделал полный мусор без логики, напутал крафты,
+> сделал не нужные рецепты, вырезал 80% майнкрафт и даже не смог сделать
+> механику добычи блоков (на всех блоках походу полный вайт лист),
+> максимальный бред и халатность при работе с модом, в такое не то что
+> невозможно играть, на это даже бредово смотреть»
+
+**Three root causes of the disaster:**
+
+1. **One-shard-to-many-recipes ambiguity.** Minecraft shaped/shapeless
+   recipes don't support a "choose your output". Given 4 `stone_fragment`
+   in 2×2, the game picks the **first matching recipe alphabetically**
+   (`from_stone_fragment_andesite.json` → outputs andesite always). The
+   other 13 stone_fragment recipes were dead. Same for snow_chunk → ice,
+   sand_pile → red_sand, dirt_chunk → coarse_dirt, hard_brick_fragment →
+   glowstone, brick_fragment → mud_bricks, wood_chip → jukebox.
+
+2. **Overgeneralized shard categories.** "compressed_metal_fragment"
+   bundled rails + hoppers + iron blocks + gold blocks → output `raw_gold`
+   ore, which has no thematic sense. "precious_fragment" bundled
+   diamond/emerald/amethyst blocks → output redstone block. These were a
+   bad design from the start.
+
+3. **Default-deny whitelist.** `MiningGate.java` set destroy speed = 0
+   for blocks not in any `breakable_by/*` tag. Even with logic correct,
+   the player experiences "blocks won't mine at all" because so many
+   vanilla blocks were unintentionally outside the explicit lists.
+
+**User's directive:** ROLLBACK to Phase 2.2.x state (PR #5), no shards,
+slight tier-tightening only.
+
+---
+
+### Phase 2.3 — Tier tightening (replaces Phase 2.3a + 2.3b, current state)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten`
+**PR:** [#9](https://github.com/gghyrmrwf/gleb-than-wolves/pull/9)
+**Status:** ✅ delivered, awaiting user testing.
+
+**Approach:**
+
+1. Removed `MiningGate.java` whitelist gate entirely.
+2. Removed all 5 `breakable_by/*.json` tag files.
+3. Cherry-picked diamond tools commit `71bc65a` from PR #6 → became
+   `d61ac87` on this branch.
+4. Added datapack overrides on vanilla `minecraft:needs_*_tool` tags
+   (`src/main/resources/data/minecraft/tags/blocks/`):
+
+**`needs_iron_tool` additions (require iron pickaxe to drop):**
+- `copper_ore`, `deepslate_copper_ore` (was stone)
+- `lapis_ore`, `deepslate_lapis_ore` (was stone)
+- `nether_gold_ore` (was wood)
+- `amethyst_block`, `budding_amethyst`, `amethyst_cluster`,
+  `large_amethyst_bud`, `medium_amethyst_bud`, `small_amethyst_bud` (was wood)
+- `end_stone`, `end_stone_bricks` + decorative variants (was wood)
+- `bell` (was wood)
+- `anvil`, `chipped_anvil`, `damaged_anvil` (was wood)
+- `shulker_box` + 16 dyed colors (was wood)
+
+**`needs_stone_tool` additions (require stone pickaxe to drop):**
+- `nether_quartz_ore` (was wood)
+- `magma_block` (was wood)
+
+**Glowstone NOT tightened** — vanilla `glowstone` block does not have
+`requiresCorrectToolForDrops`, so adding to `needs_iron_tool` has no
+effect (drops dust regardless of tool). Would require a mixin or block
+override to fix; left as-is.
+
+**Why no `TierSortingRegistry.registerTier` call:**
+GTW custom tiers (`GTW_WOODEN/STONE/IRON/DIAMOND`) are NOT registered in
+Forge's `TierSortingRegistry`. Forge falls back to `tier.getLevel()`
+integer comparison (0/1/2/3), which works correctly for our hierarchy.
+If issues surface, registering them is a one-liner in `GtwTiers.java`.
+
+**Commit:** `0290c57` — Phase 2.3: replace whitelist mining-gate with vanilla tier-tag tightening
+
+**Replaces PRs:** #6 (diamond tools merged into this), #7 (design doc abandoned), #8 (shard impl abandoned).
+
+**User's design philosophy going forward (verbatim):**
+
+> «буду делать осколки только важным предметам и по очереди»
+> (I will do shards only for important items, one by one)
+
+> «просто смотри что ломает мод и тогда не делай этого»
+> (Just check what breaks the mod and don't do that)
+
+> «осколки могут быть из руды, твёрдых блоков, земли и т.д»
+> (shards can be from ore, hard blocks, earth, etc — i.e. logically hard
+> materials only, no wool/cloth/leaves/grass)
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first
