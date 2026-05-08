@@ -4,10 +4,10 @@ import com.gghyrmrwf.glebthanwolves.GlebThanWolves;
 import com.gghyrmrwf.glebthanwolves.ModItems;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.event.MissingMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.MissingMappingsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
