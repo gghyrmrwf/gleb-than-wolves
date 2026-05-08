@@ -2,10 +2,8 @@
   "itemGroup.glebthanwolves": "Gleb Than Wolves",
 
   "item.glebthanwolves.organic_fiber": "Organic Fiber",
-  "item.glebthanwolves.leaf_fragment": "Leaf Fragment",
   "item.glebthanwolves.dirt_chunk": "Dirt Chunk",
   "item.glebthanwolves.sand_pile": "Sand Pile",
-  "item.glebthanwolves.gravel_piece": "Gravel Piece",
   "item.glebthanwolves.snow_chunk": "Snow Chunk",
   "item.glebthanwolves.wood_chip": "Wood Chip",
   "item.glebthanwolves.stone_fragment": "Stone Fragment",
@@ -20,7 +18,6 @@
   "item.glebthanwolves.brick_fragment": "Brick Fragment",
   "item.glebthanwolves.hard_brick_fragment": "Hard Brick Fragment",
   "item.glebthanwolves.glass_shard": "Glass Shard",
-  "item.glebthanwolves.cloth_piece": "Cloth Piece",
   "item.glebthanwolves.ceramic_piece": "Ceramic Piece",
   "item.glebthanwolves.concrete_dust": "Concrete Dust",
   "item.glebthanwolves.compressed_metal_fragment": "Compressed Metal Fragment",

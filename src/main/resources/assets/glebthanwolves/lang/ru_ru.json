@@ -2,10 +2,8 @@
   "itemGroup.glebthanwolves": "Gleb Than Wolves",
 
   "item.glebthanwolves.organic_fiber": "Органическое волокно",
-  "item.glebthanwolves.leaf_fragment": "Кусок листвы",
   "item.glebthanwolves.dirt_chunk": "Комок земли",
   "item.glebthanwolves.sand_pile": "Горсть песка",
-  "item.glebthanwolves.gravel_piece": "Кусок гравия",
   "item.glebthanwolves.snow_chunk": "Кусок снега",
   "item.glebthanwolves.wood_chip": "Древесная щепка",
   "item.glebthanwolves.stone_fragment": "Каменный осколок",
@@ -20,7 +18,6 @@
   "item.glebthanwolves.brick_fragment": "Кирпичный обломок",
   "item.glebthanwolves.hard_brick_fragment": "Твёрдый кирпичный обломок",
   "item.glebthanwolves.glass_shard": "Осколок стекла",
-  "item.glebthanwolves.cloth_piece": "Кусок ткани",
   "item.glebthanwolves.ceramic_piece": "Керамический осколок",
   "item.glebthanwolves.concrete_dust": "Бетонная пыль",
   "item.glebthanwolves.compressed_metal_fragment": "Спрессованный металл",

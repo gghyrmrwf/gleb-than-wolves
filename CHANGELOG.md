@@ -729,6 +729,229 @@ vanilla recipe overrides from Phase 2.0 / 2.1, all earlier Phase 2.2 /
 
 ---
 
+## Phase 2.3b — Block shards + mining gate (final scope: 18 hard-material families)
+
+The biggest progression PR yet. Most breakable blocks now go through
+the shard system: mining a block gives 2 shards (a 50% loss relative
+to a self-drop) and rebuilding the block costs 4 shards (8 for
+stations like crafting_table, chest, furnace, brewing_stand, etc.).
+The Phase 2.3a mining-gate whitelist is finally populated — every
+block in the game is either in a shard family at the right tier,
+explicitly excluded (vanilla self-drop), or intentionally unbreakable.
+
+**Final scope choice (after design iteration):** the shard system
+covers only **hard / granular materials** that physically make sense
+as "shards" or "chunks" — ore, stone, brick, glass, ceramic, concrete,
+wood, dirt, sand, snow, metal blocks. Blocks whose vanilla drops are
+required for early-game progression (saplings from leaves, seeds &
+plant_fiber from grass, flint from gravel) and soft / fabric blocks
+that shouldn't physically shard (wool, carpets) are kept on vanilla
+self-drops with the mining-gate enforcing only the tier. This keeps
+starter loops alive (primitive_axe needs flint; bushcraft needs
+organic_fiber from grass; tree regen needs saplings).
+
+The user-facing design lives in `MINING_DESIGN.md` (locked in via
+PR #7 with seven user clarifications). Implementation summary:
+
+**Shard items (18 new items + 1 rename):**
+- Renamed: `plant_fiber` → `organic_fiber` (with MissingMappings
+  alias so old saves don't lose stacks). Renamed: `wood_chunk` →
+  `wood_chip`.
+- New shards: `dirt_chunk`, `sand_pile`, `snow_chunk`,
+  `stone_fragment`, `deepstone_fragment`, `nether_fragment`,
+  `iron_fragment`, `gold_fragment`, `emerald_fragment`,
+  `diamond_fragment`, `quartz_fragment`, `ancient_fragment`,
+  `brick_fragment`, `hard_brick_fragment`, `glass_shard`,
+  `ceramic_piece`, `concrete_dust`, `compressed_metal_fragment`,
+  `precious_fragment`, `machine_scrap`.
+
+**Files:**
+- `events/ItemMappings.java` — `MissingMappingsEvent` handler that
+  remaps `glebthanwolves:plant_fiber` → `organic_fiber` and
+  `wood_chunk` → `wood_chip` so saves from Phase 1.1 / 1.2 don't
+  lose item stacks on world load.
+- `glm/BlockShardModifier.java` — new generic Global Loot Modifier
+  type (`glebthanwolves:block_shard`). Reads a block tag, a shard
+  item, a count, a mode (`replace` / `additive`), and an optional
+  Forge `tool_action`. Silk-touch always bypasses (returns vanilla
+  drops). `replace` mode discards vanilla drops and substitutes
+  shards. `additive` mode keeps vanilla drops and appends shards.
+  Wrong tool type (e.g. shovel on stone) ⇒ no shards (and in
+  `replace` mode, no drops at all). Registered in
+  `ModLootModifiers.java`.
+- `tags/blocks/shard/<name>.json` — 18 shard-category block tags
+  enumerating every block in each shard family.
+- `loot_modifiers/shard_<name>.json` — 18 GLM JSONs wiring the tags
+  to the modifier (all `replace` mode — vanilla drop discarded,
+  shards substituted). See `MINING_DESIGN.md` §4 for the full
+  per-category table; summary by tier:
+    - hand (no tool gate): dirt_chunk, sand_pile, snow_chunk.
+    - wood pickaxe: wood_chip (axe_dig), stone_fragment, glass_shard,
+      brick_fragment, ceramic_piece (all pickaxe_dig).
+    - stone pickaxe: deepstone_fragment, nether_fragment,
+      iron_fragment, concrete_dust.
+    - iron pickaxe: gold_fragment, emerald_fragment, diamond_fragment,
+      quartz_fragment, hard_brick_fragment, compressed_metal_fragment,
+      machine_scrap.
+    - diamond pickaxe: ancient_fragment, precious_fragment.
+- `tags/blocks/breakable_by/{hand,primitive,stone,iron,diamond}.json`
+  — Phase 2.3a's empty whitelist tags are now populated. Each tier
+  references the relevant `#shard/*` tags plus carve-outs for blocks
+  excluded from the shard system but still breakable at that tier.
+  Carve-outs include crops (food chain), decorative niches (sponges,
+  hay, candles, torches, beds, banners, shulker boxes, mob heads),
+  excluded ores (coal/copper/lapis/redstone — vanilla drops), and
+  utility blocks (lantern, ender_chest, conduit). Default-deny
+  semantics: anything not in any `breakable_by/*` tag is unbreakable.
+- `recipes/recombine/from_<shard>_<output>.json` — 151 recombine
+  recipes. Standard rule: 4 shards in 2×2 → 1 block; for
+  `*_shapeless` outputs (e.g. clay_balls, snowballs) 4 shards
+  shapeless → multiple items; for stations the cost is 8 shards in
+  3×3 with center empty (`XXX/X X/XXX`).
+- `assets/glebthanwolves/models/item/<shard>.json` — 18 new item
+  models, plus renamed `organic_fiber.json` and `wood_chip.json`.
+- `assets/glebthanwolves/lang/{en_us,ru_ru}.json` — 18 new lang
+  pairs ("Iron Fragment" / "Железный осколок", etc.).
+- `ModCreativeTabs.java` — all 18 new shards appear in the main
+  creative tab in tier order.
+
+**Phase 1.1 GLM status:**
+- `loot_modifiers/grass_to_fiber.json` — **kept and extended**.
+  Originally only on `tall_grass` + `large_fern`; now covers
+  `short_grass`, `tall_grass`, `fern`, `large_fern` so the player
+  can still gather `organic_fiber` for cordage. Item ID updated to
+  `glebthanwolves:organic_fiber` after the rename.
+- `loot_modifiers/logs_remove.json`, `logs_to_chips.json`,
+  `logs_to_sticks.json` — superseded by `shard_wood_chip` (replace
+  mode + axe_dig). Kept `leaves_to_stick.json` and `nerf_saplings.json`
+  since they don't conflict and still tweak vanilla leaf drops.
+
+**Excluded from the shard system (vanilla self-drop preserved,
+mining-gate enforces tier only):**
+- **Leaves** — `#minecraft:leaves`, `nether_wart_block`,
+  `warped_wart_block`. Saplings, sticks and apples must keep
+  flowing or tree regen breaks the world.
+- **Grass / flowers / mushrooms / vines / kelp / bamboo / cactus /
+  sugar_cane / corals / sea_pickle / etc.** Kept on vanilla drops
+  (wheat seeds + flowers, mushroom soups, paper, sugar, cooked
+  bamboo planks, etc.). `grass_to_fiber.json` adds `organic_fiber`
+  on top of grass / fern drops.
+- **Gravel** — vanilla drop including the 10% flint chance.
+  Without flint the spawn `primitive_axe` can't be crafted.
+- **Wool / wool_carpets** — fabric doesn't physically shatter into
+  shards; vanilla self-drop kept. (User feedback: "шерсть в осколках
+  нелогично".)
+- **Crops** — `wheat`, `carrots`, `potatoes`, `beetroots`,
+  `pumpkin_stem`, `melon_stem`, `torchflower_crop`, `pitcher_crop`,
+  `cocoa`. Food chain must keep working.
+- **Suspicious sand / suspicious gravel** — vanilla archaeology
+  brushing stays as-is.
+- **Sponges, hay_block, slime_block, honey_block, honeycomb_block,
+  dried_kelp_block, frogspawn, sea_pickle, the three froglights** —
+  decorative niches with self-drops.
+- **Mob heads** (skeleton, wither_skeleton, zombie, creeper, dragon,
+  piglin, player + their wall variants) — vanilla self-drop
+  preserves NBT.
+- **Torches** (regular / soul / redstone + wall variants), **TNT**,
+  **cake**, **end_rod**, **lightning_rod**, **bell**, **redstone
+  wiring** (wire, repeater, comparator, lever, daylight_detector,
+  redstone_lamp, tripwire / tripwire_hook, item / glow item frames,
+  paintings), **fire / soul_fire**, **cobwebs / string** — utility
+  / mechanism blocks.
+- **Saplings, beds, banners, candles, candle_cakes, shulker_boxes,
+  flowers (small / tall / coral)** — self-drop tags via
+  `#minecraft:saplings` / `#minecraft:beds` / etc.
+- **Lantern, soul_lantern, ender_chest, conduit** — utilities
+  preserved at iron tier (vanilla self-drop).
+
+**Excluded ores (kept on vanilla drops, mining-gate enforces tier):**
+- coal_ore + deepslate_coal_ore — primitive (wood pickaxe).
+- copper_ore + deepslate_copper_ore — primitive (wood pickaxe).
+- lapis_ore + deepslate_lapis_ore — stone pickaxe (loosened from
+  vanilla iron requirement, since the gate enforces tier separately).
+- redstone_ore + deepslate_redstone_ore — stone pickaxe (same).
+
+**Intentionally unbreakable (per user Q2 + vanilla rules):**
+- Vanilla unbreakable: bedrock, barrier, command_block (+ chain /
+  repeating variants), structure_block / structure_void, jigsaw,
+  light, end_portal_frame, end_portal, end_gateway, moving_piston,
+  piston_head.
+- User Q2 (decoration / mechanic preservation):
+  budding_amethyst (vanilla can't drop it; we keep that), dragon_egg,
+  spawner (mob_spawner), sculk_sensor + calibrated_sculk_sensor +
+  sculk_shrieker + sculk_catalyst (Deep Dark mechanic preserved).
+
+**Locked-in user answers (PR #7 / Q&A → MINING_DESIGN.md §0):**
+- Q1: per-mineral shards only for valuable ores (iron, gold, emerald,
+  diamond, quartz, ancient_debris); coal/copper/lapis/redstone stay
+  vanilla.
+- Q2: skip non-essential decorative blocks (vanilla self-drop with
+  mining-gate-tier enforcement).
+- Q3: shulker boxes excluded (vanilla self-drop with NBT — keeps
+  inventory).
+- Q4: workshop stations cost 8 shards (BTW-style commitment cost).
+- Q5: recipe advancements deferred to a separate clean-up PR
+  (will resolve same debt for Phase 2.0 / 2.1 / 2.2 / 2.2.x / 2.2.y
+  recipes too).
+- Q6: rename `plant_fiber` → `organic_fiber` with save migration.
+- Q7 (revised mid-impl): the original "organic / leaves / gravel as
+  additive" plan was scrapped after the user pointed out that
+  doubling vanilla drops with extra shards is illogical and that
+  `wool` makes no physical sense as a shard. Final decision:
+  organics, leaves, gravel and wool stay on **pure vanilla drops**
+  (no shards added or replaced); shard system applies only to
+  hard / granular materials.
+
+**Inventory of the shard system:**
+
+| Shard | Mode | Tier | Tool | Recipes |
+|---|---|---|---|---|
+| dirt_chunk | replace | hand | any | 10 |
+| sand_pile | replace | hand | any | 4 |
+| snow_chunk | replace | hand | any | 5 |
+| wood_chip | replace | primitive | axe | 28 |
+| stone_fragment | replace | primitive | pickaxe | 14 |
+| brick_fragment | replace | primitive | pickaxe | 7 |
+| glass_shard | replace | primitive | pickaxe | 2 |
+| ceramic_piece | replace | primitive | pickaxe | 3 |
+| deepstone_fragment | replace | stone | pickaxe | 13 |
+| nether_fragment | replace | stone | pickaxe | 4 |
+| iron_fragment | replace | stone | pickaxe | 2 |
+| concrete_dust | replace | stone | pickaxe | 2 |
+| gold_fragment | replace | iron | pickaxe | 2 |
+| emerald_fragment | replace | iron | pickaxe | 2 |
+| diamond_fragment | replace | iron | pickaxe | 2 |
+| quartz_fragment | replace | iron | pickaxe | 2 |
+| hard_brick_fragment | replace | iron | pickaxe | 6 |
+| compressed_metal_fragment | replace | iron | pickaxe | 6 |
+| machine_scrap | replace | iron | pickaxe | 16 |
+| ancient_fragment | replace | diamond | pickaxe | 4 |
+| precious_fragment | replace | diamond | pickaxe | 8 |
+
+**Plus** `organic_fiber` (renamed from `plant_fiber`) keeps its
+Phase 1.1 role: vanilla drop on grass / fern + 15% chance via the
+restored `grass_to_fiber.json` GLM. Used to craft `plant_cordage`
+for early tools.
+
+**Open issues carried forward:**
+- Recipe advancements still missing across the entire mod (this
+  intentionally rolls forward to a clean-up PR).
+- Netherite tier (`breakable_by/netherite`) is plumbed but still
+  inherits diamond — nothing currently locked behind netherite.
+  Diamond stays the effective ceiling.
+- Vanilla concrete_powder (sand-physics) is now pickaxe-tier rather
+  than shovel; design note in MINING_DESIGN.md acknowledges this is
+  a slight stretch.
+- Vanilla `flint` from gravel preserved (gravel is fully outside
+  the shard system); same for saplings/sticks/apples from leaves.
+- 4 design iterations during this PR: started "every block in
+  shards", removed grass / leaves / gravel after user feedback
+  ("ломает мод"), then removed wool too after user objection
+  ("шерсть в осколках нелогично"). Final scope: hard / granular
+  materials only.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

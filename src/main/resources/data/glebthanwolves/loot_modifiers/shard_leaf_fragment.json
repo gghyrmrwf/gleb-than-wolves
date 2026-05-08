@@ -1,8 +1,0 @@
-{
-  "type": "glebthanwolves:block_shard",
-  "conditions": [],
-  "block_tag": "glebthanwolves:shard/leaf_fragment",
-  "shard_item": "glebthanwolves:leaf_fragment",
-  "count": 2,
-  "mode": "additive"
-}

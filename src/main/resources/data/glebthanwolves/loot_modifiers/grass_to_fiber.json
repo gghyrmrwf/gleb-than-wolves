@@ -1,0 +1,12 @@
+{
+  "type": "glebthanwolves:add_item",
+  "conditions": [],
+  "loot_tables": [
+    "minecraft:blocks/short_grass",
+    "minecraft:blocks/tall_grass",
+    "minecraft:blocks/fern",
+    "minecraft:blocks/large_fern"
+  ],
+  "item": "glebthanwolves:organic_fiber",
+  "chance": 0.15
+}

@@ -1,13 +1,10 @@
 {
   "replace": false,
   "entries": [
-    "glebthanwolves:shard_organic_fiber",
-    "glebthanwolves:shard_leaf_fragment",
+    "glebthanwolves:grass_to_fiber",
     "glebthanwolves:shard_dirt_chunk",
     "glebthanwolves:shard_sand_pile",
-    "glebthanwolves:shard_gravel_piece",
     "glebthanwolves:shard_snow_chunk",
-    "glebthanwolves:shard_cloth_piece",
     "glebthanwolves:shard_wood_chip",
     "glebthanwolves:shard_stone_fragment",
     "glebthanwolves:shard_brick_fragment",

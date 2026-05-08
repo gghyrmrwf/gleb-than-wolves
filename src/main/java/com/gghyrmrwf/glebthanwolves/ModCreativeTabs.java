@@ -18,10 +18,8 @@ public final class ModCreativeTabs {
                     .displayItems((params, output) -> {
                         // Phase 2.3b shards
                         output.accept(ModItems.ORGANIC_FIBER.get());
-                        output.accept(ModItems.LEAF_FRAGMENT.get());
                         output.accept(ModItems.DIRT_CHUNK.get());
                         output.accept(ModItems.SAND_PILE.get());
-                        output.accept(ModItems.GRAVEL_PIECE.get());
                         output.accept(ModItems.SNOW_CHUNK.get());
                         output.accept(ModItems.WOOD_CHIP.get());
                         output.accept(ModItems.STONE_FRAGMENT.get());
@@ -36,7 +34,6 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BRICK_FRAGMENT.get());
                         output.accept(ModItems.HARD_BRICK_FRAGMENT.get());
                         output.accept(ModItems.GLASS_SHARD.get());
-                        output.accept(ModItems.CLOTH_PIECE.get());
                         output.accept(ModItems.CERAMIC_PIECE.get());
                         output.accept(ModItems.CONCRETE_DUST.get());
                         output.accept(ModItems.COMPRESSED_METAL_FRAGMENT.get());

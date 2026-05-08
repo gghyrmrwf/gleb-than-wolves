@@ -27,16 +27,10 @@ public final class ModItems {
 
     // --- Phase 2.3b shard items (one per block category) ---
 
-    public static final RegistryObject<Item> LEAF_FRAGMENT = ITEMS.register("leaf_fragment",
-            () -> new Item(new Item.Properties()));
-
     public static final RegistryObject<Item> DIRT_CHUNK = ITEMS.register("dirt_chunk",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> SAND_PILE = ITEMS.register("sand_pile",
-            () -> new Item(new Item.Properties()));
-
-    public static final RegistryObject<Item> GRAVEL_PIECE = ITEMS.register("gravel_piece",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> SNOW_CHUNK = ITEMS.register("snow_chunk",
@@ -76,9 +70,6 @@ public final class ModItems {
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> GLASS_SHARD = ITEMS.register("glass_shard",
-            () -> new Item(new Item.Properties()));
-
-    public static final RegistryObject<Item> CLOTH_PIECE = ITEMS.register("cloth_piece",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> CERAMIC_PIECE = ITEMS.register("ceramic_piece",

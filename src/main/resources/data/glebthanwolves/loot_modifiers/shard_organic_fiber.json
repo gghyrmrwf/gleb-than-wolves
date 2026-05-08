@@ -1,8 +1,0 @@
-{
-  "type": "glebthanwolves:block_shard",
-  "conditions": [],
-  "block_tag": "glebthanwolves:shard/organic_fiber",
-  "shard_item": "glebthanwolves:organic_fiber",
-  "count": 2,
-  "mode": "additive"
-}
