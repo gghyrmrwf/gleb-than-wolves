@@ -1,6 +1,16 @@
 {
   "replace": false,
   "values": [
-    "#glebthanwolves:breakable_by/primitive"
+    "#glebthanwolves:breakable_by/primitive",
+
+    "#glebthanwolves:shard/deepstone_fragment",
+    "#glebthanwolves:shard/nether_fragment",
+    "#glebthanwolves:shard/iron_fragment",
+    "#glebthanwolves:shard/concrete_dust",
+
+    "minecraft:lapis_ore",
+    "minecraft:deepslate_lapis_ore",
+    "minecraft:redstone_ore",
+    "minecraft:deepslate_redstone_ore"
   ]
 }
