@@ -439,6 +439,15 @@ for 5 seconds without a real jump) catch fire. Real-jump detection uses
 airborne-tick duration (≥ 5 ticks) to block the "block over head + spam
 jump" exploit. See `HISTORY.md` for the design discussion.
 
+### Phase 3.1 — Piglins always hostile ✅ done
+
+Second incremental Nether-difficulty mechanic. Piglins ignore gold
+armor and attack the player unconditionally. The "throw gold ingot to
+distract" trick is also disabled (admiration state is bypassed).
+Implementation: per-tick brain memory manipulation in
+`AlwaysHostilePiglinsEvents.java`. Baby piglins, Piglin Brutes, and
+Zoglins are not touched.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

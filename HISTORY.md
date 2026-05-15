@@ -1150,6 +1150,92 @@ mechanic doesn't accidentally save them from lava.
 ~92 KB. Delivered to user as
 `glebthanwolves-phase3.0-nether-idle-hazard.jar`.
 
+**User testing result:** "доп урон не нужен, а так всё работает" —
+mechanic accepted as-is. Extra damage layer is NOT desired.
+
+---
+
+### Phase 3.1 — Piglins always hostile
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested mechanic:** "Свинолюди всегда враждебны" — make piglins
+unconditionally hostile to the player, regardless of whether the player
+wears gold armor. Selected from a multiple-choice list of Nether
+difficulty ideas.
+
+**Design space exploration.** Vanilla piglin neutrality is enforced
+through the piglin's behavior tree at two layers:
+
+1. **Target acquisition layer.** The piglin's brain has a memory slot
+   `NEAREST_TARGETABLE_PLAYER_NOT_WEARING_GOLD` (`MemoryModuleType<Player>`).
+   Vanilla `PiglinAi.updateActivity` and related methods populate or
+   clear this slot every tick based on a scan of nearby players and
+   their `EquipmentSlot.HEAD/CHEST/LEGS/FEET` items. If any equipped
+   item is in the `minecraft:gold_armor` tag (gold helmet, chest,
+   leggings, or boots), the player is filtered out of this slot.
+   Without a populated slot, the piglin never picks the player as a
+   target.
+
+2. **Admiration sub-state layer.** When a piglin picks up a `gold_*`
+   item from the ground, vanilla sets the `ADMIRING_ITEM` brain
+   memory slot to true and the `ADMIRING_DISABLED` cooldown is
+   armed. While admiring, all attack tasks are paused for ~5 seconds.
+   This is the basis for the "throw gold to distract" trick.
+
+**Bypass strategy chosen.** We could have used a mixin to override
+`PiglinAi.isWearingSafeArmor(Player)` directly. That's the "cleanest"
+approach but introduces a mixin dependency for a single boolean check.
+Instead, we drive everything from the Forge events we already use, by
+directly manipulating the piglin's brain memory each half-second:
+
+- Force-set `NEAREST_TARGETABLE_PLAYER_NOT_WEARING_GOLD` to the nearest
+  eligible player. Vanilla will clear it next tick (if gold armor is
+  worn), then we set it again at the next check interval. The piglin's
+  attack-target propagation logic picks up the slot in its regular
+  behavior tree, so animations, weapon raise, and chase logic all
+  work normally.
+- Erase `ADMIRING_ITEM` and `ADMIRING_DISABLED`. Any admire state the
+  piglin entered in the last 10 ticks is cancelled.
+
+**Why 10-tick interval and not every tick.** A 10-tick (0.5 s) cycle is
+imperceptible to gameplay — the piglin will lose its target for at most
+half a second before reacquiring. Vanilla AI itself runs attack-target
+re-evaluation on a similar cadence. Per-tick force-set would be wasted
+CPU.
+
+**Detection radius preserved at 16 blocks.** Vanilla piglin detection
+range varies with player armor/state, but the typical "no gold armor"
+detection is ~16 blocks. We use 16 to match. Increasing this would buff
+piglin detection range beyond vanilla, which the user did NOT request
+and would be a separate dial.
+
+**Side effect: piglin trading is broken.** Players can no longer trade
+with piglins by throwing gold ingots, because admiration is bypassed.
+The user's stated intent ("always hostile") aligns with this — piglins
+are enemies, not vendors. If trading needs to be preserved later, it
+would require a more surgical approach (e.g. only bypass admiration
+when the player is the one being targeted, allow admiration for
+ambient gold pickups).
+
+**What we deliberately do NOT touch:**
+
+- **Baby piglins** (`piglin.isBaby() == true`). In vanilla they never
+  attack; they only panic-flee from zombified piglins / soul fire /
+  etc. Force-targeting babies would create AI flicker between attack
+  and flee tasks.
+- **Piglin Brutes** (`net.minecraft.world.entity.monster.piglin.PiglinBrute`).
+  Separate class, already always-hostile in vanilla.
+- **Zoglins** (zombified piglins). Already always-hostile.
+- **Invisibility respect.** Vanilla piglins ignore invisible players;
+  we preserve that.
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar`
+~92 KB. Delivered to user as
+`glebthanwolves-phase3.1-piglins-always-hostile.jar`.
+
 ---
 
 ## External code references

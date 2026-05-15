@@ -1075,6 +1075,72 @@ is a pure behavior-modification phase, server-side only.
 - `FIRE_REFRESH_SECONDS = 1` — fire duration refreshed each tick while
   past the threshold.
 
+**User feedback:** "доп урон не нужен, а так всё работает" — confirmed
+working, no extra damage layer needed.
+
+---
+
+## Phase 3.1 — Piglins always hostile
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Свинолюди всегда враждебны"
+from a multiple-choice prompt of further Nether-difficulty mechanics.
+
+**Mechanic:** piglins (the regular `Piglin` entity, not Brutes or
+Zoglins) attack any nearby player regardless of whether the player
+wears gold armor. The classic "throw a gold ingot to distract them"
+trick also stops working — they no longer admire dropped gold items.
+
+### Pacifying behaviors that are bypassed
+
+1. **Gold-armor pacification** (vanilla rule: piglin treats a player as
+   neutral if the player wears any piece of gold armor on any slot).
+   Implementation: every 10 ticks, for each adult piglin, find the
+   nearest eligible player within 16 blocks and force-set the piglin's
+   `NEAREST_TARGETABLE_PLAYER_NOT_WEARING_GOLD` brain memory slot to
+   that player. Vanilla AI normally clears this slot when it detects
+   gold armor on the player; we re-set it every half-second, so any
+   neutral window is imperceptible.
+
+2. **Gold-item admiration** (vanilla rule: a piglin that picks up a
+   gold item enters a ~5-second admire state during which it stops
+   attacking and may trade). Implementation: every 10 ticks we erase
+   the piglin's `ADMIRING_ITEM` and `ADMIRING_DISABLED` brain memory
+   slots, so admiration never gains traction.
+
+### What's NOT changed
+
+- **Baby piglins** — skipped. In vanilla they never attack adults,
+  they panic-flee. Force-aggroing babies would just make them flicker
+  between flee and attack states.
+- **Piglin Brutes** — already always-hostile in vanilla, no handling
+  needed.
+- **Zoglins** (zombified piglins) — already always-hostile.
+- **Vanilla detection range** — preserved at 16 blocks. The mechanic
+  removes the gold-armor exception without buffing detection.
+- **Vanilla invisibility respect** — players with the Invisibility
+  potion effect are still ignored.
+- **Creative / spectator** — players in these modes are not targeted.
+- **Trading mechanic via piglin gold-trade**  — implicitly broken
+  (admiration is bypassed). Player can no longer barter with piglins
+  by throwing gold ingots. This is a side-effect of "always hostile"
+  that aligns with the user's intent: piglins are enemies, not traders.
+
+### Files
+
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AlwaysHostilePiglinsEvents.java`
+  — new file. Single class with a `LivingEvent.LivingTickEvent` handler.
+  ~90 lines including thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AlwaysHostilePiglinsEvents()` on the Forge event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `AlwaysHostilePiglinsEvents.java`):
+- `AGGRO_RADIUS = 16.0` — block distance to detect player.
+- `CHECK_INTERVAL_TICKS = 10` (~0.5 s) — how often to re-apply target.
+
 ---
 
 ## Removed experiment — Phase 1.15 cave danger
