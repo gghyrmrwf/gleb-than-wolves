@@ -38,6 +38,7 @@ public class GlebThanWolves {
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_TABS.register(modEventBus);
         ModLootModifiers.GLM_SERIALIZERS.register(modEventBus);
+        ModSounds.SOUND_EVENTS.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new BushcraftBreakEvents());

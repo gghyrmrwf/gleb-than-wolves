@@ -1,0 +1,12 @@
+{
+  "pig_explode": {
+    "category": "hostile",
+    "subtitle": "subtitles.glebthanwolves.pig_explode",
+    "sounds": [
+      {
+        "name": "glebthanwolves:pig_explode",
+        "stream": false
+      }
+    ]
+  }
+}
