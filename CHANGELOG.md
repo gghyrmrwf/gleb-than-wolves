@@ -1143,6 +1143,68 @@ Server-side only.
 
 ---
 
+## Phase 3.2 — Zombified piglins always hostile
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "это ты сделал для пиглинов, теперь я
+хочу чтобы и свинозомби всегда были враждебны"
+
+**Mechanic:** zombified piglins (`ZombifiedPiglin`, the neutral undead
+piglin variant — NOT to be confused with Zoglins, which are already
+always-hostile in vanilla) attack the player on sight instead of
+waiting to be provoked. The vanilla "neutral until attacked, then
+angry for 25 s" rule is bypassed.
+
+**How it works:** zombified piglins use the `NeutralMob` interface with
+a UUID-keyed "persistent anger target" and a per-tick anger timer.
+Vanilla sets the target + timer only when the player attacks the piglin
+(or attacks a herd-mate). Every 10 ticks (~0.5 s) we:
+
+1. Locate the closest non-creative / non-spectator / alive /
+   non-invisible player within 16 blocks of the zombified piglin.
+2. Force-set `setPersistentAngerTarget(player.getUUID())`.
+3. Force-set `setRemainingPersistentAngerTime(1200)` (60 s), enough
+   that the anger timer never lapses between refreshes.
+4. Force-set `setTarget(player)` if it isn't already, so the piglin
+   begins its chase / attack animation immediately.
+
+**Herd aggro propagation preserved.** Vanilla zombified piglins
+broadcast anger to nearby herd-mates when one is provoked. With every
+adult piglin individually force-angered, the entire visible herd
+becomes uniformly hostile around the player.
+
+**What's NOT changed:**
+
+- **Baby zombified piglins** — skipped. They don't attack in vanilla,
+  they follow the herd. Force-aggroing babies creates AI flicker.
+- **Zoglins** (`Zoglin`). Different entity class, already always-hostile
+  in vanilla.
+- **Piglin Brutes**, **regular Piglins**. Different entities; piglins
+  handled by Phase 3.1; brutes already always-hostile.
+- **Vanilla follow_range** (~35 blocks). Once angered, the piglin uses
+  vanilla chase range. We only set the trigger at 16 blocks.
+- **Invisibility respect.** Vanilla zombified piglins ignore invisible
+  players; we preserve that.
+- **Creative / spectator** — players in these modes are not targeted.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AlwaysHostileZombifiedPiglinsEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~105 lines with
+  thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AlwaysHostileZombifiedPiglinsEvents()` on the Forge
+  event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `AlwaysHostileZombifiedPiglinsEvents.java`):
+- `AGGRO_RADIUS = 16.0` — block distance to start angering.
+- `CHECK_INTERVAL_TICKS = 10` (~0.5 s) — how often to re-apply anger.
+- `ANGER_REFRESH_TICKS = 1200` (60 s) — anger timer pushed each refresh.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

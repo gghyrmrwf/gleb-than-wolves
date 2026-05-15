@@ -448,6 +448,15 @@ Implementation: per-tick brain memory manipulation in
 `AlwaysHostilePiglinsEvents.java`. Baby piglins, Piglin Brutes, and
 Zoglins are not touched.
 
+### Phase 3.2 — Zombified piglins always hostile ✅ done
+
+Third incremental Nether-difficulty mechanic. Zombified piglins
+(`ZombifiedPiglin`, the neutral undead variant) skip the
+"neutral-until-provoked" stage and attack on sight. Implementation:
+per-tick `setPersistentAngerTarget` + `setRemainingPersistentAngerTime`
+refresh in `AlwaysHostileZombifiedPiglinsEvents.java`. Baby zombified
+piglins, Zoglins, and piglin brutes are not touched.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

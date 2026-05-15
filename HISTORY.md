@@ -1238,6 +1238,78 @@ ambient gold pickups).
 
 ---
 
+### Phase 3.2 — Zombified piglins always hostile
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested mechanic:** after Phase 3.1 made piglins always
+hostile, the user immediately asked for the same treatment for
+"свинозомби" — Zombified Piglins. (Note: in Russian Minecraft
+terminology, "свинозомби" refers specifically to the `ZombifiedPiglin`
+entity — the neutral-when-unprovoked undead piglin spawning naturally
+in the Nether — and NOT to Zoglins, which are called "зоглины" and are
+already always-hostile in vanilla.)
+
+**How vanilla handles zombified piglin neutrality.** Unlike piglins
+(which use the modern brain/memory system), zombified piglins use the
+older `NeutralMob` interface + goal-based AI. The interface defines:
+
+- `setPersistentAngerTarget(UUID)` — store who you're mad at.
+- `getPersistentAngerTarget()` — UUID of the current anger target.
+- `setRemainingPersistentAngerTime(int)` — ticks left to stay angry.
+- `getRemainingPersistentAngerTime()` — current anger countdown.
+- `startPersistentAngerTimer()` — vanilla helper that picks 20–39 s
+  random.
+
+Vanilla provocation routes: `ZombifiedPiglin#hurt(...)` calls
+`maybeAlertOthers(...)` which iterates nearby zombified piglins within
+`ALERT_RANGE_Y/XZ` and calls `setPersistentAngerTarget` + a random
+20–39 s timer. After the timer expires, the piglin returns to neutral.
+
+**Our bypass: skip the provocation step entirely.** Every 10 ticks
+(~0.5 s), for each adult zombified piglin we scan nearby players,
+pick the closest eligible one, and:
+
+```java
+zp.setPersistentAngerTarget(nearest.getUUID());
+zp.setRemainingPersistentAngerTime(ANGER_REFRESH_TICKS);  // 1200 = 60s
+if (zp.getTarget() != nearest) zp.setTarget(nearest);
+```
+
+The 60 s anger refresh is much longer than the 0.5 s refresh cadence —
+the timer never runs out, the piglin stays permanently angry, and the
+herd-alert mechanic keeps amplifying the effect.
+
+**Why not handle via `NeutralMob.maybeAlertOthers` directly.** That
+method is protected and tied to `LivingEntity#hurt` flow. Force-calling
+it would require a synthetic damage event. Setting the anger target +
+timer directly is simpler and avoids any unwanted side effects of
+fake damage (death loop, knockback, etc.).
+
+**Symmetry with Phase 3.1.** Same per-tick scan structure, same
+16-block trigger radius, same eligibility filters (creative /
+spectator / dead / invisible all excluded), same baby exclusion. The
+only difference is the brain-memory vs anger-target mechanism (piglin
+brain vs zombified piglin NeutralMob).
+
+**Combined effect with prior phases.** In the Nether, the player now
+faces three independent threats:
+1. Idle-fire after 5 s of standing (Phase 3.0).
+2. Hostile piglins even with full gold armor (Phase 3.1).
+3. Hostile zombified piglins from the moment they see you (Phase 3.2).
+
+There is no longer a "safe" Nether biome by armor choice or by
+crouching still. The player must move, must jump periodically, must
+treat every piglin and zombified piglin as a credible threat.
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar`
+~92 KB. Delivered to user as
+`glebthanwolves-phase3.2-zombified-piglins-always-hostile.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first

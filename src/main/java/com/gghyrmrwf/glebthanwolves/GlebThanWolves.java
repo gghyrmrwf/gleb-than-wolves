@@ -1,6 +1,7 @@
 package com.gghyrmrwf.glebthanwolves;
 
 import com.gghyrmrwf.glebthanwolves.events.AlwaysHostilePiglinsEvents;
+import com.gghyrmrwf.glebthanwolves.events.AlwaysHostileZombifiedPiglinsEvents;
 import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
 import com.gghyrmrwf.glebthanwolves.events.HardcoreEvents;
 import com.gghyrmrwf.glebthanwolves.events.NetherIdleHazardEvents;
@@ -35,6 +36,7 @@ public class GlebThanWolves {
         MinecraftForge.EVENT_BUS.register(new WorldEvents());
         MinecraftForge.EVENT_BUS.register(new NetherIdleHazardEvents());
         MinecraftForge.EVENT_BUS.register(new AlwaysHostilePiglinsEvents());
+        MinecraftForge.EVENT_BUS.register(new AlwaysHostileZombifiedPiglinsEvents());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
