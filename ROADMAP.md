@@ -457,6 +457,23 @@ per-tick `setPersistentAngerTarget` + `setRemainingPersistentAngerTime`
 refresh in `AlwaysHostileZombifiedPiglinsEvents.java`. Baby zombified
 piglins, Zoglins, and piglin brutes are not touched.
 
+### Phase 3.3 — Ghasts hear at 100 blocks ✅ done
+
+Fourth incremental Nether-difficulty mechanic. Vanilla Ghast
+`FOLLOW_RANGE` attribute is bumped from 64 to 100 blocks at spawn.
+Vanilla ±4-block Y filter and line-of-sight requirement are
+preserved. Implementation: `EntityJoinLevelEvent` →
+`setBaseValue(100.0)` in `GhastFollowRangeEvents.java`.
+
+### Phase 3.4 — Magma blocks burn harder ✅ done
+
+Fifth incremental Nether-difficulty mechanic. Magma blocks gain two
+extra effects on living entities standing on them: Slowness I
+(refreshed each tick) and 2 seconds of fire (refreshed each tick).
+Net: ~2 DPS instead of vanilla ~1 DPS. Vanilla exemptions preserved:
+crouching, frost-walker boots, fire-immune entities. Implementation:
+per-tick check in `MagmaBlockHazardEvents.java`.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

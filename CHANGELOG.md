@@ -1205,6 +1205,102 @@ Server-side only.
 
 ---
 
+## Phase 3.3 — Ghasts hear at 100 blocks
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Гасты слышат на 100 блоков"
+from the follow-up multiple-choice prompt.
+
+**Mechanic:** the vanilla `Ghast` entity's `FOLLOW_RANGE` attribute is
+bumped from 64 to 100 blocks at spawn. Ghasts now notice and start
+shooting at players from significantly further away.
+
+**How it works:** the `Ghast` entity's target selector uses a vanilla
+`NearestAttackableTargetGoal<Player>(this, Player.class, 10, true,
+false, predicate)` goal that scans for players within
+`Mob#getFollowDistance()`, which returns the `FOLLOW_RANGE` attribute.
+On `EntityJoinLevelEvent`, we set the ghast's `FOLLOW_RANGE` base
+value to 100. Vanilla 64 → 100 = +56% detection range.
+
+**Preserved vanilla constraints:**
+
+- **±4 block vertical filter.** The vanilla target predicate ignores
+  any player whose Y coordinate differs from the ghast's Y by more
+  than 4 blocks. This filter is what stops ghasts from sniping
+  through whole biomes at hidden players. We do NOT remove it.
+- **Line of sight requirement.** Vanilla `NearestAttackableTargetGoal`
+  uses `mob.getSensing().hasLineOfSight(target)`. A player behind a
+  wall is still safe.
+- **Other attribute modifiers stack.** We use `setBaseValue`, so any
+  +modifier (e.g. from `HardcoreEvents` enemy buff layer) is still
+  applied on top.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/GhastFollowRangeEvents.java`
+  — new file. `EntityJoinLevelEvent` handler. ~45 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new GhastFollowRangeEvents()` on the Forge event bus.
+
+**Tunable constants** (in `GhastFollowRangeEvents.java`):
+- `GHAST_FOLLOW_RANGE = 100.0` — new base detection range in blocks.
+
+---
+
+## Phase 3.4 — Magma blocks burn harder
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Магма-блоки сильнее жгут"
+from the same follow-up prompt as Phase 3.3.
+
+**Mechanic:** while a living entity is standing on a magma block, two
+extra effects are applied each tick:
+
+1. **Slowness I** for 40 ticks (2 s), refreshed every tick. The
+   effect always shows ~2 s remaining while on the block and expires
+   quickly after stepping off.
+2. **2 seconds of fire** via `setSecondsOnFire(2)`, refreshed every
+   tick. Vanilla fire damage ticks once per second for 1 damage, so
+   this adds ~+1 DPS on top of vanilla magma's step-on damage.
+
+Net: magma blocks now deal **~2 DPS** instead of ~1 DPS to a player
+standing on them, AND slow movement, AND keep burning briefly after
+the player escapes.
+
+**Vanilla exemptions preserved:**
+
+- **Crouching** (`isSteppingCarefully()`) — no damage / slowness /
+  fire. Same as vanilla magma behavior.
+- **Frost Walker enchantment on boots** — no damage / slowness /
+  fire. Same as vanilla.
+- **Fire-immune entities** (blazes, striders, skeleton horses) —
+  skipped, since their fire-immunity makes the burning bonus
+  meaningless anyway.
+
+**Additional exemptions added by this mechanic:**
+
+- **Airborne entities** — only entities physically standing on the
+  block are affected. Jumping above the block is safe.
+- **Creative / spectator players** — skipped.
+
+**Dimension scope:** the mechanic applies wherever magma blocks
+exist (Nether by default, but also Overworld underwater ravines).
+Player-placed magma blocks in a base are also affected — building
+near magma is intentionally hazardous.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/MagmaBlockHazardEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~110 lines with
+  thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new MagmaBlockHazardEvents()` on the Forge event bus.
+
+**Tunable constants** (in `MagmaBlockHazardEvents.java`):
+- `SLOWNESS_DURATION_TICKS = 40` (2 s) — refreshed each tick.
+- `SLOWNESS_AMPLIFIER = 0` (level I).
+- `FIRE_REFRESH_SECONDS = 2` — fire bonus refresh interval.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

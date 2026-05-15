@@ -1310,6 +1310,128 @@ treat every piglin and zombified piglin as a credible threat.
 
 ---
 
+### Phase 3.3 + 3.4 — Ghast detection range, Magma block hazard
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested mechanics (both in one batch):** "сделай 'Гасты слышат
+на 100 блоков' и 'Магма-блоки сильнее жгут'". Two independent Nether
+difficulty tweaks bundled into one PR / build.
+
+#### Phase 3.3 — Ghasts at 100 blocks
+
+**Mechanism chosen.** Vanilla Ghast's `targetSelector` adds a single
+`NearestAttackableTargetGoal<Player>(this, Player.class, 10, true,
+false, (e) -> Math.abs(e.getY() - this.getY()) <= 4.0D)`. The `10`
+is `randomInterval` (recalc every 10 ticks). The Y filter is the
+predicate. The detection radius is NOT a parameter of the goal — it
+comes from `Mob#getFollowDistance()` which is the `FOLLOW_RANGE`
+attribute.
+
+Vanilla Ghast base FOLLOW_RANGE = 64. We bump to 100 at spawn via
+`EntityJoinLevelEvent`. No mixin needed, no goal manipulation.
+
+**Why not buff via attribute modifier instead of base value.**
+`setBaseValue` is symmetric with vanilla: a base value is what the
+attribute would be if there were no modifiers. Any additive or
+multiplicative modifier (e.g. from `HardcoreEvents`' +15% enemy HP
+buff layer, or future difficulty mods) stacks on top correctly. An
+ADDITION modifier would not commute with multiplicative modifiers and
+could cause unexpected behavior in the presence of mod stacking.
+
+**Why we don't lift the Y filter.** The ±4 block Y filter prevents
+ghasts from sniping at players through entire Nether biomes when they
+have no line of sight. Removing it would make ghasts target hidden
+players from extreme distances, which would feel cheap and broken.
+The user asked for "hear at 100 blocks", which we interpret as
+horizontal detection within a reasonable vertical spread — the
+vanilla Y filter captures that intent.
+
+**Other ghast-related ideas NOT touched here:**
+- Ghast HP buff — already covered by `HardcoreEvents`.
+- Fireball speed / damage — separate concern, not requested.
+- Ghast spawn rate — separate, not requested.
+- Ghast ranged predict — vanilla ghasts shoot at last known position
+  with some lead. Not touched.
+
+#### Phase 3.4 — Magma block hazard
+
+**Mechanism chosen.** Vanilla magma damage is in `MagmaBlock#stepOn`:
+
+```java
+public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
+    if (!entity.isSteppingCarefully() &&
+        entity instanceof LivingEntity &&
+        !EnchantmentHelper.hasFrostWalker((LivingEntity)entity)) {
+        entity.hurt(level.damageSources().hotFloor(), 1.0F);
+    }
+    super.stepOn(level, pos, state, entity);
+}
+```
+
+`stepOn` is called when an entity moves into the block's footprint.
+For a player standing still with micro-jitter, this is called every
+tick, but vanilla entity invulnerability frames (`invulnerableTime`)
+limit actual damage to roughly 1 per 20 ticks (1 second).
+
+**Augmentation strategy.** Rather than overriding `MagmaBlock` (which
+would require an AT or replacing the block registration), we add an
+*orthogonal* per-tick layer in `LivingEvent.LivingTickEvent`:
+
+1. Check the entity is standing on `Blocks.MAGMA_BLOCK` via
+   `getBlockState(entity.getOnPos()).is(Blocks.MAGMA_BLOCK)`.
+2. Apply the same vanilla exemption checks (crouching, frost walker,
+   fire immune, airborne).
+3. Add Slowness I + 2 s fire each tick.
+
+The vanilla `stepOn` damage continues as normal — we don't replace
+it, we add on top.
+
+**Damage math.** Vanilla:
+- Magma `stepOn` damage: ~1 / second (invuln-limited)
+- Total: ~1 DPS
+
+After Phase 3.4:
+- Magma `stepOn` damage: unchanged, ~1 / second
+- Fire damage: 1 / second (vanilla fire tick rate)
+- Total: ~2 DPS
+
+Plus Slowness I makes escape harder (15% slower walk speed). Net
+feel: stepping on magma is now ~2× more punishing.
+
+**Why `setSecondsOnFire(2)` and not direct damage.** Two reasons:
+1. Fire is a vanilla mechanic the player already understands — they
+   know to put it out, they hear the crackle sound, they see the
+   overlay. Adding direct damage on top of vanilla magma would feel
+   like a bug ("why am I taking damage so fast?").
+2. Fire damage handling already correctly avoids invuln-frame
+   stacking issues. Vanilla `LivingEntity.baseTick` ticks fire
+   damage at its own cadence, separate from contact damage. Our
+   bonus naturally interleaves with vanilla magma damage instead of
+   colliding with invuln frames.
+
+**Why not also affect player-placed magma in safe bases.** The user
+didn't request a dimension/biome filter, and adding one would
+require either:
+- Tagging player-placed vs natural magma (NBT state — not present
+  in vanilla magma blocks).
+- A claim system (out of scope).
+
+So magma is uniformly hazardous everywhere. If the user wants
+furnace-style magma rooms in their base, they can place ladders or
+slabs to avoid stepping on it.
+
+**Build:** `./gradlew build` clean. The compiler emits one
+deprecation warning for `setSecondsOnFire` (Forge 1.20.1 marks it
+deprecated in favor of `setRemainingFireTicks(seconds * 20)`, but
+both still work). Output `glebthanwolves-1.0.0.jar` ~95 KB.
+Delivered to user as
+`glebthanwolves-phase3.3-3.4-ghasts-and-magma.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first
