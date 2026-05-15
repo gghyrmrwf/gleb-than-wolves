@@ -518,6 +518,24 @@ an upward velocity impulse. Player must heal the horse to ride it
 consistently. Implementation: `LivingEvent.LivingTickEvent` handler
 in `AngryHorseBuckEvents.java`.
 
+### Phase 3.10 — Endermen aggro on proximity in crimson/warped ✅ done
+
+In `crimson_forest` and `warped_forest` biomes only, endermen
+aggro on the nearest eligible player within 12 blocks WITHOUT
+needing the look trigger. Carved pumpkin helmet defense is
+preserved. Other Nether biomes and other dimensions keep vanilla
+look-only aggro. Implementation: `LivingEvent.LivingTickEvent`
+handler in `EndermanProximityAggroEvents.java`.
+
+### Phase 3.11 — Bed in Nether 50% ignites floor ✅ done
+
+Right-clicking a bed in the Nether: 50% chance vanilla explosion,
+50% chance the bed is silently destroyed and fire blocks are
+spawned in a 3-block radius around the bed (30% density). On
+netherrack the fires burn forever. Implementation:
+`PlayerInteractEvent.RightClickBlock` handler in
+`BedIgnitesFloorEvents.java`.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

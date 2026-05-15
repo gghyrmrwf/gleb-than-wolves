@@ -1656,6 +1656,134 @@ Phase 3.4 (not from this batch). Output `glebthanwolves-1.0.0.jar`
 
 ---
 
+### Phase 3.10 + 3.11 — Nether quality-of-misery batch (endermen + bed)
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-selected from menu:** of 10 simple Nether-difficulty ideas
+proposed, the user chose options 9 (endermen aggro on proximity in
+crimson/warped forest) and 10 (bed 50% ignites floor in Nether).
+Both are low-LoC, high-impact Nether mechanics that don't require
+overworld changes.
+
+#### Phase 3.10 — Endermen proximity aggro
+
+**Vanilla enderman aggro.** Endermen use the Goal-based AI system
+(predates the brain memory system that piglins use). Key vanilla
+goals:
+- `EnderMan.EndermanLookForPlayerGoal` — sets target if a player
+  is within 64 blocks AND looking at the enderman's head.
+- `EnderMan.EndermanFreezeWhenLookedAt` — pauses movement when
+  looked at.
+- HurtByTargetGoal — sets target on whoever just hurt the enderman.
+
+**Our approach.** Mirror the Phase 3.1/3.2 pattern: every 10
+ticks, scan the level for endermen, check biome, find nearest
+eligible player, force `setTarget`. We don't have to disable or
+override any vanilla goal — `setTarget` is universal.
+
+**Biome filter.** Crimson/warped forest are the two biomes where
+endermen spawn most often in Nether (warped forest especially —
+it's the canonical enderman habitat post-1.16). Restricting to
+these two biomes keeps the mechanic thematic ("forest creatures
+are more sensitive") and avoids surprises in nether_wastes /
+soul_sand_valley / basalt_deltas where endermen are rare anyway.
+
+**Pumpkin defense.** Real reason to preserve it: removing it would
+silently break a strategy that players who learned the game by the
+book actively rely on. If we wanted to invalidate the pumpkin
+defense, we'd need to clearly signal it to the player. We don't
+do that here, so we keep the defense intact.
+
+**Range tradeoff.** 12 blocks vs. vanilla's 64 (look range). Why
+smaller: vanilla's 64 blocks for look-aggro is acceptable because
+the player has to actively look — they're committing to it. With
+proximity aggro, 64 blocks would aggro every enderman in render
+distance, creating dozens of teleporting endermen following the
+player around. 12 blocks is roughly "you can see the enderman as
+more than a distant figure" range. Tighter, more manageable, more
+fair.
+
+**Reuse from Phase 3.1.** The helper pattern (creative/spectator/
+dying/invisible filter + nearest-Eligible-player search) is
+basically identical to AlwaysHostilePiglinsEvents. Considered
+factoring into a shared utility but kept inline for now — the
+duplication is small and the helpers diverge slightly (pumpkin
+filter is enderman-only).
+
+#### Phase 3.11 — Bed ignites floor
+
+**Vanilla bed-in-Nether.** `BedBlock#use` checks
+`canSetSpawn(level)` which delegates to `level.dimensionType().bedWorks()`.
+For Nether and End, bedWorks() = false. The vanilla failure path:
+```java
+level.removeBlock(pos, false);
+BlockPos pos2 = pos.relative(state.getValue(FACING).getOpposite());
+if (level.getBlockState(pos2).is(this)) {
+    level.removeBlock(pos2, false);
+}
+Vec3 vec3 = pos.getCenter();
+level.explode(null, level.damageSources().badRespawnPointExplosion(vec3),
+    null, vec3, 5.0F, true, Level.ExplosionInteraction.BLOCK);
+return InteractionResult.SUCCESS;
+```
+
+Power 5.0 with fire causes ~25 HP at point-blank. Brutal.
+
+**Forge event flow.** `PlayerInteractEvent.RightClickBlock` fires
+BEFORE `BedBlock#use`. We can detect the click before vanilla
+processes it. By setting canceled = true, we prevent vanilla
+entirely.
+
+**Our 50/50 design.** The user said "имеет шанс сразу зажечь пол"
+— "has a chance to immediately ignite the floor". I picked 50/50
+because the user mentioned both outcomes equally and described
+the ignite as a survival alternative. Could be tuned later.
+
+**Bed-half handling.** Beds occupy two blocks: HEAD and FOOT,
+linked via the FACING blockstate property. The vanilla code finds
+the other half by:
+```java
+if (state.getValue(PART) != BedPart.HEAD) {
+    pos = pos.relative(state.getValue(FACING));
+}
+// then later
+BlockPos pos2 = pos.relative(state.getValue(FACING).getOpposite());
+```
+Which is: if you clicked FOOT, move forward to find HEAD; then
+move backward from HEAD to find FOOT again. We just compute
+"other half" relative to whichever half was clicked:
+```java
+if (state.getValue(BedBlock.PART) == BedPart.HEAD) {
+    otherPos = clickedPos.relative(facing.getOpposite());
+} else {
+    otherPos = clickedPos.relative(facing);
+}
+```
+Both halves are then removed via `level.removeBlock(pos, false)`.
+The `false` argument skips drops — the bed is destroyed, not
+dropped as an item.
+
+**Fire spawning.** We scan a 7×3×2 box (X: -3..+3, Y: 0..+1, Z:
+-3..+3 relative to bed center). For each air block with a sturdy
+floor below, roll 30%; on success place `Blocks.FIRE.defaultBlockState()`.
+On netherrack (the most common Nether ground block) fire burns
+indefinitely by vanilla physics — this creates a persistent hazard
+zone around the failed bed.
+
+**Why not damage the player directly.** The ignition outcome is
+positioned as the "less brutal" alternative to vanilla explosion.
+Adding direct damage would defeat that distinction. The fire
+itself will damage the player if they don't move (~1 HP/sec).
+
+**Build:** `./gradlew build` clean, no new warnings. Output
+`glebthanwolves-1.0.0.jar` ~100 KB. Delivered to user as
+`glebthanwolves-phase3.10-3.11-nether-extras.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first

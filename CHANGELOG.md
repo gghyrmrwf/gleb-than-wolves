@@ -1542,6 +1542,105 @@ llama at low HP throwing off its rider feels consistent.
 
 ---
 
+## Phase 3.10 — Endermen aggro on proximity in crimson/warped forest
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction:** "Эндермены в багровом/искажённом лесу более
+чувствительные"
+
+**Mechanic:** in {@code minecraft:crimson_forest} and
+{@code minecraft:warped_forest} biomes (Nether's two enderman
+hotspot biomes), endermen aggro on the nearest eligible player
+within 12 blocks WITHOUT needing the player to look at them. Other
+Nether biomes (nether_wastes, soul_sand_valley, basalt_deltas) and
+Overworld/End endermen keep vanilla look-only aggro.
+
+**How it works:** `LivingEvent.LivingTickEvent` filtered to
+`EnderMan`. Every 10 ticks, biome lookup at the enderman's
+position; if not crimson/warped forest, skip. If enderman has no
+existing target, find nearest eligible player within 12 blocks
+and force `setTarget`. Endermen use Goal-based AI (not the brain
+memory system used by piglins in Phase 3.1/3.2), so `setTarget` is
+the correct entry point.
+
+**Carved pumpkin defense preserved.** Vanilla endermen ignore
+players wearing a carved pumpkin helmet. This is a well-known
+strategy and removing it would feel like an unfair surprise.
+Players with `Items.CARVED_PUMPKIN` in helmet slot are still
+ignored by this handler.
+
+**Creative/spectator/invisible players excluded** as with other
+aggro mechanics.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/EndermanProximityAggroEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~110 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new EndermanProximityAggroEvents()` on the Forge
+  event bus.
+
+**Tunable constants** (in `EndermanProximityAggroEvents.java`):
+- `AGGRO_RADIUS = 12.0` — max aggro distance.
+- `CHECK_INTERVAL_TICKS = 10` — half-second cadence.
+
+---
+
+## Phase 3.11 — Bed in Nether 50% chance to ignite floor
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction:** "Кровать в Незере имеет шанс сразу зажечь
+пол"
+
+**Mechanic:** when a player right-clicks a bed in the Nether
+(`Level.NETHER`), vanilla normally triggers a powerful explosion
+(power 5.0, ignores block protection, ~25 HP damage at close
+range). With this handler, there is a 50% chance the explosion is
+replaced by a "floor ignition" effect: bed blocks are removed and
+fire blocks are placed on solid floor surfaces in a 3-block radius
+around the bed, at ~30% density.
+
+**Two outcomes per bed-click in Nether:**
+
+1. **50% — vanilla explosion.** The bed explodes as in vanilla.
+   Player takes massive damage if close.
+2. **50% — floor ignition.** Bed is destroyed silently (no
+   explosion). Fire blocks spawn on netherrack / stone / other
+   solid surfaces in a 7×3×2 box around the bed. On netherrack
+   (vanilla infinite-burn surface) these fires last forever and
+   create a long-term hazard.
+
+**Player survives ignition outcome** (no direct damage) but is
+standing in a burning area and will take fire damage unless they
+move quickly.
+
+**Implementation:** `PlayerInteractEvent.RightClickBlock` fires
+BEFORE `BedBlock#use` runs the vanilla explosion. On 50% roll, we
+set canceled = true (preventing vanilla) and manually:
+- Identify head & foot blocks of the bed (BedBlock.FACING +
+  BedBlock.PART).
+- Remove both blocks silently.
+- Scan a 3-block radius for air spaces above solid floors and
+  spawn `Blocks.FIRE` at 30% density.
+
+**Dimension restriction:** Nether only. End beds keep vanilla
+explosion. Overworld beds work normally (bedWorks() = true).
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/BedIgnitesFloorEvents.java`
+  — new file. `PlayerInteractEvent.RightClickBlock` handler.
+  ~135 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new BedIgnitesFloorEvents()` on the Forge event bus.
+
+**Tunable constants** (in `BedIgnitesFloorEvents.java`):
+- `IGNITE_CHANCE = 0.5f` — probability of floor-ignite vs vanilla
+  explosion.
+- `FIRE_RADIUS = 3` — horizontal radius for fire spread.
+- `FIRE_HEIGHT_EXTENT = 1` — vertical extent (Y..Y+1).
+- `FIRE_DENSITY = 0.30f` — per-cell fire probability.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

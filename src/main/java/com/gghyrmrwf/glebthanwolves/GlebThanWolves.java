@@ -3,8 +3,10 @@ package com.gghyrmrwf.glebthanwolves;
 import com.gghyrmrwf.glebthanwolves.events.AlwaysHostilePiglinsEvents;
 import com.gghyrmrwf.glebthanwolves.events.AlwaysHostileZombifiedPiglinsEvents;
 import com.gghyrmrwf.glebthanwolves.events.AngryHorseBuckEvents;
+import com.gghyrmrwf.glebthanwolves.events.BedIgnitesFloorEvents;
 import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
 import com.gghyrmrwf.glebthanwolves.events.ChickenLaysTntEvents;
+import com.gghyrmrwf.glebthanwolves.events.EndermanProximityAggroEvents;
 import com.gghyrmrwf.glebthanwolves.events.ExplodingPigEvents;
 import com.gghyrmrwf.glebthanwolves.events.ExplodingRabbitJumpEvents;
 import com.gghyrmrwf.glebthanwolves.events.GhastFollowRangeEvents;
@@ -51,6 +53,8 @@ public class GlebThanWolves {
         MinecraftForge.EVENT_BUS.register(new SheepShearedWitherEvents());
         MinecraftForge.EVENT_BUS.register(new ExplodingRabbitJumpEvents());
         MinecraftForge.EVENT_BUS.register(new AngryHorseBuckEvents());
+        MinecraftForge.EVENT_BUS.register(new EndermanProximityAggroEvents());
+        MinecraftForge.EVENT_BUS.register(new BedIgnitesFloorEvents());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
