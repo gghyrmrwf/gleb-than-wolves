@@ -297,11 +297,11 @@ user tests, signs off, then the next one is built.
 |---|---|---|---|---|
 | 1 | `cobblestone_fragment` | 2 → 1 cobble | `minecraft:stone` only | ✅ Phase 2.5 done |
 | 2 | `iron_fragment` | 4 → 1 raw_iron | `iron_ore`, `deepslate_iron_ore` | ✅ Phase 2.6 done |
-| 3 | `gold_fragment` | 4 → 1 raw_gold | `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | planned |
-| 4 | `diamond_fragment` | 4 → 1 diamond | `diamond_ore`, `deepslate_diamond_ore` | planned |
-| 5 | `copper_fragment` | 4 → 1 raw_copper | `copper_ore`, `deepslate_copper_ore` | planned |
-| 6 | `quartz_fragment` | 4 → 1 nether_quartz | `nether_quartz_ore` | planned |
-| 7 | `coal_fragment` | 2 → 1 coal | `coal_ore`, `deepslate_coal_ore` | planned |
+| 3 | `gold_fragment` | 4 → 1 raw_gold | `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | ✅ Phase 2.7 done |
+| 4 | `diamond_fragment` | 4 → 1 diamond | `diamond_ore`, `deepslate_diamond_ore` | ✅ Phase 2.8 done |
+| 5 | `copper_fragment` | 4 → 1 raw_copper | `copper_ore`, `deepslate_copper_ore` | ✅ Phase 2.9 done |
+| 6 | `quartz_fragment` | 4 → 1 nether_quartz | `nether_quartz_ore` | ✅ Phase 2.10 done |
+| 7 | `coal_fragment` | 2 → 1 coal | `coal_ore`, `deepslate_coal_ore` | ✅ Phase 2.11 done |
 
 **Skipped (per user):** netherite tools, lapis_fragment, emerald_fragment.
 

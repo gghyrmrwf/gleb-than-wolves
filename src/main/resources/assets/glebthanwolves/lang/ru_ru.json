@@ -6,6 +6,11 @@
   "item.glebthanwolves.wood_chunk": "Кусок бревна",
   "item.glebthanwolves.cobblestone_fragment": "Осколок булыжника",
   "item.glebthanwolves.iron_fragment": "Осколок железа",
+  "item.glebthanwolves.gold_fragment": "Осколок золота",
+  "item.glebthanwolves.diamond_fragment": "Осколок алмаза",
+  "item.glebthanwolves.copper_fragment": "Осколок меди",
+  "item.glebthanwolves.quartz_fragment": "Осколок кварца",
+  "item.glebthanwolves.coal_fragment": "Осколок угля",
   "item.glebthanwolves.primitive_axe": "Примитивный топор",
 
   "item.glebthanwolves.wooden_pickaxe": "Грубая деревянная кирка",

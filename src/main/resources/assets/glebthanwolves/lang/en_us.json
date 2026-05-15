@@ -6,6 +6,11 @@
   "item.glebthanwolves.wood_chunk": "Wood Chunk",
   "item.glebthanwolves.cobblestone_fragment": "Cobblestone Fragment",
   "item.glebthanwolves.iron_fragment": "Iron Fragment",
+  "item.glebthanwolves.gold_fragment": "Gold Fragment",
+  "item.glebthanwolves.diamond_fragment": "Diamond Fragment",
+  "item.glebthanwolves.copper_fragment": "Copper Fragment",
+  "item.glebthanwolves.quartz_fragment": "Quartz Fragment",
+  "item.glebthanwolves.coal_fragment": "Coal Fragment",
   "item.glebthanwolves.primitive_axe": "Primitive Axe",
 
   "item.glebthanwolves.wooden_pickaxe": "Crude Wooden Pickaxe",

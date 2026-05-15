@@ -21,6 +21,11 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.WOOD_CHUNK.get());
                         output.accept(ModItems.COBBLESTONE_FRAGMENT.get());
                         output.accept(ModItems.IRON_FRAGMENT.get());
+                        output.accept(ModItems.GOLD_FRAGMENT.get());
+                        output.accept(ModItems.DIAMOND_FRAGMENT.get());
+                        output.accept(ModItems.COPPER_FRAGMENT.get());
+                        output.accept(ModItems.QUARTZ_FRAGMENT.get());
+                        output.accept(ModItems.COAL_FRAGMENT.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                         output.accept(ModItems.WOODEN_PICKAXE.get());
                         output.accept(ModItems.WOODEN_AXE.get());

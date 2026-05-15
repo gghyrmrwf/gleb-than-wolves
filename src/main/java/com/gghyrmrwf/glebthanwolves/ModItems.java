@@ -35,6 +35,31 @@ public final class ModItems {
     public static final RegistryObject<Item> IRON_FRAGMENT = ITEMS.register("iron_fragment",
             () -> new Item(new Item.Properties()));
 
+    /* Phase 2.7 — крафт-материал-осколок золота. 4 шт → 1 raw_gold.
+     * Дропается из gold_ore, deepslate_gold_ore (1 шт), nether_gold_ore (2-6 шт). */
+    public static final RegistryObject<Item> GOLD_FRAGMENT = ITEMS.register("gold_fragment",
+            () -> new Item(new Item.Properties()));
+
+    /* Phase 2.8 — крафт-материал-осколок алмаза. 4 шт → 1 diamond.
+     * Дропается из diamond_ore и deepslate_diamond_ore. Fortune действует как на ваниль. */
+    public static final RegistryObject<Item> DIAMOND_FRAGMENT = ITEMS.register("diamond_fragment",
+            () -> new Item(new Item.Properties()));
+
+    /* Phase 2.9 — крафт-материал-осколок меди. 4 шт → 1 raw_copper.
+     * Дропается из copper_ore и deepslate_copper_ore (2-5 шт). */
+    public static final RegistryObject<Item> COPPER_FRAGMENT = ITEMS.register("copper_fragment",
+            () -> new Item(new Item.Properties()));
+
+    /* Phase 2.10 — крафт-материал-осколок кварца. 4 шт → 1 nether_quartz.
+     * Дропается из nether_quartz_ore. */
+    public static final RegistryObject<Item> QUARTZ_FRAGMENT = ITEMS.register("quartz_fragment",
+            () -> new Item(new Item.Properties()));
+
+    /* Phase 2.11 — крафт-материал-осколок угля. 2 шт → 1 coal (другое соотношение!).
+     * Дропается из coal_ore и deepslate_coal_ore. */
+    public static final RegistryObject<Item> COAL_FRAGMENT = ITEMS.register("coal_fragment",
+            () -> new Item(new Item.Properties()));
+
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",
             () -> new PrimitiveAxeItem(PrimitiveAxeItem.PRIMITIVE_TIER, 5.0f, -3.2f,
                     new Item.Properties().durability(8)));

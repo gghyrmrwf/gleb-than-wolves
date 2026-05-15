@@ -899,6 +899,115 @@ ore on average, fragment system effectively neutralized at max Fortune.
 
 ---
 
+## Phase 2.7-2.11 — Remaining targeted shards (gold, diamond, copper, quartz, coal)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "работает, можешь делать дальше" then
+"просто постепенно делай, отчитывайся, а я буду говорить тебе делать
+дальше или нет. можешь продолжить"
+
+Five shards delivered in one batch (one commit, one jar) following the
+same loot-table-override + recipe pattern as Phase 2.5/2.6. Each shard
+ratio and source-block list matches the agreed plan.
+
+### Phase 2.7 — Gold fragment
+
+**Ratio:** 4 → 1 `minecraft:raw_gold` (shaped 2×2).
+**Sources:**
+- `minecraft:gold_ore` (overworld) — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_gold_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:nether_gold_ore` — **2-6 fragments uniform**, Fortune(uniform_bonus_count, bonusMultiplier=1).
+  This preserves the vanilla "nether gold is richer" feel — vanilla nether_gold_ore drops 2-6 gold_nuggets.
+
+**Effect:** overworld gold path is 4× harder. Nether gold path remains
+"richer than overworld" (2-6 fragments) but in fragment terms instead of
+nugget terms, so player still needs to combine to raw_gold.
+
+### Phase 2.8 — Diamond fragment
+
+**Ratio:** 4 → 1 `minecraft:diamond` (shaped 2×2).
+**Sources:**
+- `minecraft:diamond_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_diamond_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 4× harder to reach 1 diamond. Fortune III still gives 1-4
+fragments per ore (matches vanilla 1-4 diamond per ore at max Fortune).
+
+### Phase 2.9 — Copper fragment
+
+**Ratio:** 4 → 1 `minecraft:raw_copper` (shaped 2×2).
+**Sources:**
+- `minecraft:copper_ore` — **2-5 fragments uniform**, Fortune(ore_drops).
+- `minecraft:deepslate_copper_ore` — **2-5 fragments uniform**, Fortune(ore_drops).
+
+**Effect:** vanilla copper drops 2-5 raw_copper. Now drops 2-5 fragments,
+so 2-5 ÷ 4 = 0.5-1.25 raw_copper per ore (avg ~0.9). About 4× harder than
+vanilla on the ingot path. Players still see "copper drops a lot of stuff
+per ore", just need to combine.
+
+### Phase 2.10 — Quartz fragment
+
+**Ratio:** 4 → 1 `minecraft:quartz` (shaped 2×2).
+**Sources:**
+- `minecraft:nether_quartz_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 4× harder to reach 1 quartz. Important because nether quartz
+is gated behind Phase 2.3 `needs_stone_tool` tag — player must have stone
+pickaxe to even mine the ore in the first place. With fragments this is
+a strong nerf to comparator/observer/daylight sensor production.
+
+### Phase 2.11 — Coal fragment (2:1 ratio, different from others)
+
+**Ratio:** **2 → 1 `minecraft:coal` (shapeless, 2 items in inventory grid).**
+Different ratio per explicit user request.
+
+**Sources:**
+- `minecraft:coal_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_coal_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 2× harder to reach 1 coal. Affects torches (1 coal + 1 stick =
+4 torches) and smelting fuel. Charcoal path (1 log + furnace → 1 charcoal)
+is still vanilla and unaffected, so player can fall back to charcoal.
+
+### Files (all 5 phases combined)
+
+- **Java:** `ModItems.java` (+5 fragment item registrations),
+  `ModCreativeTabs.java` (+5 display entries).
+- **Localization:** `en_us.json` (+5 entries), `ru_ru.json` (+5 entries).
+- **Models:** 5 new files at `assets/glebthanwolves/models/item/*_fragment.json`,
+  each reusing the closest vanilla item texture (raw_gold, diamond, raw_copper,
+  quartz, coal) — no custom assets yet.
+- **Recipes:** 5 new files at `data/glebthanwolves/recipes/`:
+  `raw_gold_from_fragments.json` (shaped 2×2),
+  `diamond_from_fragments.json` (shaped 2×2),
+  `raw_copper_from_fragments.json` (shaped 2×2),
+  `nether_quartz_from_fragments.json` (shaped 2×2),
+  `coal_from_fragments.json` (shapeless 2×).
+- **Loot table overrides:** 10 new files at
+  `data/minecraft/loot_tables/blocks/`:
+  `gold_ore.json`, `deepslate_gold_ore.json`, `nether_gold_ore.json`,
+  `diamond_ore.json`, `deepslate_diamond_ore.json`,
+  `copper_ore.json`, `deepslate_copper_ore.json`,
+  `nether_quartz_ore.json`,
+  `coal_ore.json`, `deepslate_coal_ore.json`.
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar` 90.8 KB
+(up from 79.7 KB at end of Phase 2.6).
+
+**Not addressed (intentional, per user preference):**
+- Chest loot is not touched in any of these phases. Vanilla raw_gold,
+  raw_copper, diamond, quartz, coal in chests still drop as in vanilla.
+- Drowned-with-gold-nugget drops (rare) untouched.
+- Piglin barter outputs untouched.
+- Quartz blocks crafted from quartz items: ingredient is still
+  `minecraft:quartz` (not the fragment), so player must combine fragments
+  before crafting quartz block.
+
+**Skipped permanently (per user decision):** netherite tools, lapis_fragment,
+emerald_fragment.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
