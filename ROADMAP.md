@@ -296,7 +296,7 @@ user tests, signs off, then the next one is built.
 | Order | Shard | Ratio | Source blocks | Status |
 |---|---|---|---|---|
 | 1 | `cobblestone_fragment` | 2 → 1 cobble | `minecraft:stone` only | ✅ Phase 2.5 done |
-| 2 | `iron_fragment` | 4 → 1 raw_iron | `iron_ore`, `deepslate_iron_ore` | planned |
+| 2 | `iron_fragment` | 4 → 1 raw_iron | `iron_ore`, `deepslate_iron_ore` | ✅ Phase 2.6 done |
 | 3 | `gold_fragment` | 4 → 1 raw_gold | `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | planned |
 | 4 | `diamond_fragment` | 4 → 1 diamond | `diamond_ore`, `deepslate_diamond_ore` | planned |
 | 5 | `copper_fragment` | 4 → 1 raw_copper | `copper_ore`, `deepslate_copper_ore` | planned |

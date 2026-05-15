@@ -845,6 +845,60 @@ ignored Fortune, so consistent).
 
 ---
 
+## Phase 2.6 — Iron fragment (targeted shard #2)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Approach:** mining iron ore now drops `glebthanwolves:iron_fragment` instead
+of `minecraft:raw_iron`. Player combines **4 fragments → 1 raw_iron** via a
+shaped 2×2 recipe (works in inventory grid, no table needed). Raw iron is
+then smelted in a furnace into iron ingot as in vanilla.
+
+**Source blocks:**
+- `minecraft:iron_ore` (overworld surface/cave layer)
+- `minecraft:deepslate_iron_ore` (deepslate layer)
+
+**Effect on progression:**
+- Vanilla: 1 iron ore broken → 1 raw_iron → 1 iron_ingot (1×).
+- Now: 1 iron ore broken → 1 fragment, so 4 iron ores → 1 raw_iron →
+  1 iron_ingot (4× mining cost).
+- Iron tools require 3 iron_ingots in our crude_iron_pickaxe recipe →
+  12 iron ores mined (was 3) to advance from stone to iron tier.
+
+**Silk Touch:** preserved. Silk-touch pickaxe on iron_ore / deepslate_iron_ore
+still drops the ore block itself (as in vanilla). Only the non-silk path is
+diverted to fragments.
+
+**Fortune:** preserved. Fortune III on iron fragments behaves like Fortune III
+on vanilla raw_iron — `apply_bonus(fortune, ore_drops)` function is applied
+to the fragment drop, so Fortune III gives up to 4 fragments per ore (same
+as vanilla 1-4 raw_iron). Net effect with Fortune III: still ~1 ingot per
+ore on average, fragment system effectively neutralized at max Fortune.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModItems.java`
+  — registers `IRON_FRAGMENT` after `COBBLESTONE_FRAGMENT`.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModCreativeTabs.java`
+  — adds iron fragment after cobble fragment in main creative tab.
+- `src/main/resources/assets/glebthanwolves/lang/en_us.json`
+  — `"Iron Fragment"`.
+- `src/main/resources/assets/glebthanwolves/lang/ru_ru.json`
+  — `"Осколок железа"`.
+- `src/main/resources/assets/glebthanwolves/models/item/iron_fragment.json`
+  — `item/generated`, texture `minecraft:item/raw_iron` (placeholder).
+- `src/main/resources/data/glebthanwolves/recipes/raw_iron_from_fragments.json`
+  — shaped 2×2 `iron_fragment` → 1 `raw_iron`.
+- `src/main/resources/data/minecraft/loot_tables/blocks/iron_ore.json`
+  — overrides vanilla loot table.
+- `src/main/resources/data/minecraft/loot_tables/blocks/deepslate_iron_ore.json`
+  — overrides vanilla loot table.
+
+**Not addressed in this PR (intentional):**
+- Chest loot containing raw_iron / iron_ingot is untouched (per user preference).
+- Zombie/skeleton iron equipment drops untouched.
+- Iron golem death drop (1-2 iron_ingot, 0-2 poppy) untouched.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

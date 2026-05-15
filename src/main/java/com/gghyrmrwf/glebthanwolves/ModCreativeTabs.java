@@ -20,6 +20,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.PLANT_CORDAGE.get());
                         output.accept(ModItems.WOOD_CHUNK.get());
                         output.accept(ModItems.COBBLESTONE_FRAGMENT.get());
+                        output.accept(ModItems.IRON_FRAGMENT.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                         output.accept(ModItems.WOODEN_PICKAXE.get());
                         output.accept(ModItems.WOODEN_AXE.get());

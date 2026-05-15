@@ -956,6 +956,68 @@ lapis_fragment, emerald_fragment.
 
 **Next shard (after user OK on cobble):** iron_fragment.
 
+**User confirmation:** "работает, можешь делать дальше" — green-lit
+iron_fragment.
+
+---
+
+### Phase 2.6 — Iron fragment (targeted shard #2)
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**Approach:** copy-paste the Phase 2.5 pattern with two source blocks
+(iron_ore + deepslate_iron_ore) and the canonical 4:1 fragment ratio.
+Recipe is shaped 2×2 instead of shapeless 2× because it visually
+distinguishes "this is a full ore worth of fragments" from "this is
+just two leftover bits".
+
+**What got implemented in this PR:**
+
+- Added `glebthanwolves:iron_fragment` item (registered after
+  COBBLESTONE_FRAGMENT in ModItems.java).
+- Added shaped 2×2 recipe `4× fragment → 1 raw_iron` (works in player
+  inventory 2×2 grid, no crafting table needed).
+- Overrode `minecraft:iron_ore` loot table — non-silk-touch drop swapped
+  from `minecraft:raw_iron` to `glebthanwolves:iron_fragment`. Same Fortune
+  scaling (`apply_bonus(fortune, ore_drops)`) and `explosion_decay`
+  functions preserved.
+- Overrode `minecraft:deepslate_iron_ore` loot table — same swap.
+- Silk touch path unchanged on both loot tables (drops the ore block).
+- en/ru localization, item model reusing `minecraft:item/raw_iron` texture
+  (placeholder, no custom asset yet — visually a raw iron lump).
+- Added to main creative tab between `cobblestone_fragment` and
+  `primitive_axe`.
+
+**Why shaped 2×2 instead of shapeless:** with 4 fragments, shaped fills
+the entire 2×2 grid and is unambiguous. Shapeless would also work but
+shaped is slightly more "ceremonial" for the larger ratio — and players
+seeing "must fill all 4 slots" clearly understand the cost.
+
+**Why iron_fragment also gets Fortune:** vanilla iron_ore drops 1-4
+raw_iron with Fortune III. If our fragment did NOT have Fortune scaling,
+then Fortune III would give 1 fragment per ore = 0.25 ingots per ore,
+making Fortune useless on the shard system. By preserving
+`apply_bonus(fortune, ore_drops)` on the fragment, Fortune III yields up
+to 4 fragments per ore = 1 ingot per ore on average — matching vanilla
+non-Fortune behavior. So at max Fortune, the shard system effectively
+disappears, which is acceptable as a high-investment endgame reward.
+
+**Not implemented (intentional):**
+
+- Chest loot containing raw_iron, iron_ingot, iron_nuggets is untouched
+  (user said leave chests alone for now).
+- Iron golem death drop unchanged (1-2 iron_ingot drop).
+- Zombie/skeleton iron equipment drops unchanged.
+- Iron block (`minecraft:iron_block`) breaks back to 1 iron_block as
+  before (it's a placed item, not an ore).
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar`
+79.7 KB. Delivered to user as `glebthanwolves-phase2.6-iron-fragment.jar`.
+
+**Next shard (after user OK on iron):** gold_fragment.
+
 ---
 
 ## External code references

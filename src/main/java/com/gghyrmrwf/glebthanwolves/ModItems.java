@@ -30,6 +30,11 @@ public final class ModItems {
     public static final RegistryObject<Item> COBBLESTONE_FRAGMENT = ITEMS.register("cobblestone_fragment",
             () -> new Item(new Item.Properties()));
 
+    /* Phase 2.6 — крафт-материал-осколок железа. 4 шт → 1 raw_iron.
+     * Дропается из iron_ore и deepslate_iron_ore. Fortune действует как на ваниль raw_iron. */
+    public static final RegistryObject<Item> IRON_FRAGMENT = ITEMS.register("iron_fragment",
+            () -> new Item(new Item.Properties()));
+
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",
             () -> new PrimitiveAxeItem(PrimitiveAxeItem.PRIMITIVE_TIER, 5.0f, -3.2f,
                     new Item.Properties().durability(8)));
