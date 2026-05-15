@@ -484,6 +484,40 @@ Piglins, zombified piglins, piglin brutes, hoglins, zoglins are
 separate classes and unaffected. Implementation:
 `LivingDeathEvent` handler in `ExplodingPigEvents.java`.
 
+### Phase 3.6 — Chickens lay TNT instead of eggs (10%) ✅ done
+
+When an adult chicken lays an egg (vanilla cadence: every 5-10 min),
+there is a 10% chance the egg `ItemEntity` is replaced with a primed
+TNT entity (4-second fuse). Player-thrown eggs (which are
+`ThrownEgg` projectiles, not `ItemEntity`s) are unaffected.
+Implementation: `EntityJoinLevelEvent` cancellation in
+`ChickenLaysTntEvents.java`.
+
+### Phase 3.7 — Sheep sheared → Wither (10%) ✅ done
+
+When a player right-clicks an unsheared adult sheep with shears,
+there is a 10% chance the player gets Wither I for 5 seconds
+(~2-3 HP). The shear itself still succeeds. Implementation:
+`PlayerInteractEvent.EntityInteract` handler in
+`SheepShearedWitherEvents.java`.
+
+### Phase 3.8 — Rabbits explode from jumping (2%) ✅ done
+
+Every rabbit jump rolls a 2% chance for a small (power 1.5)
+explosion at the rabbit's position, killing the rabbit. Includes
+Killer Bunny variant and baby rabbits (all `Rabbit` class).
+Implementation: `LivingEvent.LivingJumpEvent` handler in
+`ExplodingRabbitJumpEvents.java`.
+
+### Phase 3.9 — Horses buck rider at low HP ✅ done
+
+When a player rides an `AbstractHorse` (horses, donkeys, mules,
+skeleton/zombie horses, llamas) at < 30% HP, every second there is
+a 30% chance the horse bucks — ejects all passengers and applies
+an upward velocity impulse. Player must heal the horse to ride it
+consistently. Implementation: `LivingEvent.LivingTickEvent` handler
+in `AngryHorseBuckEvents.java`.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

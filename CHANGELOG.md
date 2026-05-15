@@ -1377,6 +1377,171 @@ Server-side only.
 
 ---
 
+## Phase 3.6 — Chickens lay TNT instead of eggs (10%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Курицы откладывают TNT вместо яиц"
+
+**Mechanic:** when an adult chicken lays an egg (vanilla cadence:
+once per 5-10 minutes per chicken), there is a 10% chance the egg
+item is replaced with a primed TNT entity with a 4-second fuse.
+
+**How it works:** `EntityJoinLevelEvent` fires for every entity
+joining the level, including `ItemEntity`s spawned by
+`Chicken#aiStep` → `spawnAtLocation(Items.EGG)`. We filter to
+ItemEntities containing `Items.EGG` and check for a `Chicken`
+within 1.5 blocks (to distinguish naturally-laid eggs from
+player-dropped eggs). On the 10% roll, we cancel the egg spawn and
+add a `PrimedTnt` entity at the same position.
+
+**Player-thrown eggs are unaffected.** When a player "throws" an
+egg in vanilla, the projectile is a `ThrownEgg` (not an
+`ItemEntity`), so this handler never matches.
+
+**Chicken jockeys.** Vanilla chickens being ridden by baby zombies
+(chicken jockeys) don't lay eggs in `aiStep`, so the handler never
+fires for them — they would have nothing to replace.
+
+**TNT details:**
+- Fuse 80 ticks (4 seconds) — vanilla default.
+- Owner null (anonymous explosion).
+- Power 4.0 — vanilla TNT power; matches a placed-and-ignited TNT
+  block exactly.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ChickenLaysTntEvents.java`
+  — new file. `EntityJoinLevelEvent` handler. ~95 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ChickenLaysTntEvents()` on the Forge event bus.
+
+**Tunable constants** (in `ChickenLaysTntEvents.java`):
+- `TNT_CHANCE = 0.10f` — replacement probability.
+- `CHICKEN_PROXIMITY_RADIUS = 1.5` — search radius for nearby chicken.
+- `TNT_FUSE_TICKS = 80` — TNT fuse duration.
+
+---
+
+## Phase 3.7 — Sheep sheared → Wither (10%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Овцы при стрижке могут заразить
+иссушением"
+
+**Mechanic:** when a player right-clicks an unsheared adult sheep
+with shears, there is a 10% chance the player receives Wither I
+for 5 seconds (~2-3 HP damage). The shear itself still succeeds.
+
+**How it works:** `PlayerInteractEvent.EntityInteract` fires when a
+player right-clicks any entity. Filter:
+- Target is a `Sheep`.
+- Sheep is not already sheared (`isSheared() == false`).
+- Sheep is an adult (babies have no wool).
+- Held item is `Items.SHEARS`.
+
+On 10% roll, apply Wither I effect to the player for 100 ticks. We
+do NOT cancel the event — vanilla shear proceeds normally.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/SheepShearedWitherEvents.java`
+  — new file. `PlayerInteractEvent.EntityInteract` handler. ~80 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new SheepShearedWitherEvents()` on the Forge event bus.
+
+**Tunable constants** (in `SheepShearedWitherEvents.java`):
+- `WITHER_CHANCE = 0.10f` — wither application probability.
+- `WITHER_DURATION_TICKS = 100` (5 s).
+- `WITHER_AMPLIFIER = 0` (level I).
+
+---
+
+## Phase 3.8 — Rabbits sometimes explode from jumping (2%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Кролики иногда взрываются от
+прыжка"
+
+**Mechanic:** every time a rabbit jumps (vanilla rabbit AI jumps
+every 1-3 seconds), there is a 2% chance the rabbit detonates a
+small (power 1.5) explosion at its position, killing itself.
+
+**How it works:** Forge's `LivingEvent.LivingJumpEvent` fires when
+any living entity jumps. Filter to `Rabbit` instances and roll 2%.
+On success, call `Level#explode(null, x, y+halfHeight, z, 1.5,
+MOB)`. Same anonymous-explosion pattern as Phase 3.5 pig deaths.
+
+**Power 1.5 vs 3.0** — half of vanilla creeper. Rabbits are small;
+a full creeper-strength explosion would feel disproportionate.
+Power 1.5 typically kills rabbits and small mobs within 2 blocks
+but does little terrain damage.
+
+**Affected entities:**
+- Regular rabbits (all biome variants).
+- Killer Bunny (vanilla rare aggressive variant) — same Rabbit class.
+- Baby rabbits — same Rabbit class.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ExplodingRabbitJumpEvents.java`
+  — new file. `LivingEvent.LivingJumpEvent` handler. ~70 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ExplodingRabbitJumpEvents()` on the Forge event bus.
+
+**Tunable constants** (in `ExplodingRabbitJumpEvents.java`):
+- `EXPLODE_CHANCE = 0.02f` — per-jump probability.
+- `EXPLODE_POWER = 1.5f` — half of vanilla creeper.
+
+---
+
+## Phase 3.9 — Horses buck rider at low HP (30%/sec below 30% HP)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Лошади брыкаются и сбрасывают
+игрока"
+
+**Mechanic:** when a player rides an `AbstractHorse` (regular
+horses, donkeys, mules, skeleton horses, zombie horses, llamas)
+and the horse's health is below 30% of max, every second there is
+a 30% chance the horse bucks — ejects all passengers AND throws
+them upward with a +0.5 velocity impulse.
+
+**How it works:** `LivingEvent.LivingTickEvent` filtered to
+`AbstractHorse`. Every 20 ticks, check:
+- Has passengers.
+- HP < 30% of max.
+
+If both true, roll 30%. On success: snapshot passengers, call
+`horse.ejectPassengers()`, then for each `LivingEntity` passenger
+set Y velocity to 0.5 (upward impulse) so the rider physically
+flies off, not just dismounts.
+
+**Net player experience.** A wounded horse refuses to be ridden.
+After bucking, the player can re-mount, but a 30% buck check per
+second means they're likely thrown again within 3-4 seconds. The
+player must heal the horse (golden carrot, hay bale, golden apple)
+or wait for natural regen before riding it consistently.
+
+**Fall damage emerges naturally.** The +0.5 upward impulse + vanilla
+gravity creates ~0.5-1.0 block fall. On flat ground this is
+harmless; on cliffs or stone the player takes fall damage. Same as
+a real-life buck.
+
+**Llamas included.** `AbstractChestedHorse` extends `AbstractHorse`,
+and `Llama` extends `AbstractChestedHorse`, so llamas buck too. A
+llama at low HP throwing off its rider feels consistent.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AngryHorseBuckEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~105 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AngryHorseBuckEvents()` on the Forge event bus.
+
+**Tunable constants** (in `AngryHorseBuckEvents.java`):
+- `LOW_HP_THRESHOLD = 0.30f` — HP ratio threshold (30%).
+- `BUCK_CHECK_INTERVAL_TICKS = 20` (1 s) — check cadence.
+- `BUCK_CHANCE_PER_CHECK = 0.30f` — buck probability per check.
+- `BUCK_UPWARD_IMPULSE = 0.5` — rider Y velocity on eject.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

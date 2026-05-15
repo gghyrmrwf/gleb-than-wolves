@@ -1512,6 +1512,150 @@ Phase 3.4 (`setSecondsOnFire`), unrelated to this phase. Output
 
 ---
 
+### Phase 3.6 + 3.7 + 3.8 + 3.9 — Mob quirk batch (chickens/sheep/rabbits/horses)
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested batch:** "думаю можно сделать 'Курицы откладывают TNT
+вместо яиц', 'Овцы при стрижке могут заразить иссушением', 'Кролики
+иногда взрываются от прыжка', 'Лошади брыкаются и сбрасывают игрока',
+можешь приступать пока я делаю тест прошлого мода". The user is
+parallelizing testing of Phase 3.5 with my implementation of the next
+four. Bundled into one PR / build to minimize trip count.
+
+**Pattern:** all four mechanics follow the same template established
+in Phase 3.5: subscribe to a Forge event, filter by entity class +
+context, roll a probability, apply an effect. No new items, no
+recipes, no loot tables. Server-side only.
+
+#### Phase 3.6 — Chickens lay TNT (10%)
+
+**Vanilla egg-laying.** `Chicken.aiStep()` decrements `eggTime` each
+tick. When `eggTime <= 0`:
+```java
+this.playSound(SoundEvents.CHICKEN_EGG, 1.0F, ...);
+this.spawnAtLocation(Items.EGG);
+this.eggTime = this.random.nextInt(6000) + 6000;
+```
+`spawnAtLocation` creates an `ItemEntity` at the chicken's position
+and calls `level.addFreshEntity(itemEntity)`. This triggers
+`EntityJoinLevelEvent` for the ItemEntity.
+
+**Detection.** Filter ItemEntity → Items.EGG → AABB search for
+nearby Chicken (1.5 block radius). The chicken hasn't moved within
+the same tick as it laid, so the egg ItemEntity is essentially at
+the chicken's position. Player-dropped eggs in inventory drops
+land at the player's position, almost always > 1.5 blocks from
+any chicken — false positive risk is tiny.
+
+**Player-thrown eggs are NOT ItemEntity.** `Player#throwEgg` creates
+`new ThrownEgg(level, player)` — a projectile entity, different
+class. Our filter never matches it. So players throwing eggs at
+chickens to spawn baby chickens still works normally.
+
+**Replacement.** Cancel the egg ItemEntity via `event.setCanceled(true)`,
+then create `new PrimedTnt(level, x, y, z, null)` with `setFuse(80)`
+and add it to the level. 4-second fuse gives the player time to run.
+
+**Why not Phase 3.5-style instant explosion.** A laid TNT entity is
+*surprising* but not *immediately lethal*. The 4-second fuse gives
+nearby players time to react. This matches the user's "иногда"
+(sometimes / surprise) phrasing better than an instant detonation.
+
+#### Phase 3.7 — Sheep Wither (10%)
+
+**Vanilla sheep shearing.** `Sheep#mobInteract(Player, InteractionHand)`
+checks if held item is shears + sheep is alive + sheep is readyForShearing.
+If yes, calls `Sheep#shear` which sets `setSheared(true)` and drops
+wool items.
+
+**Forge event flow.** `PlayerInteractEvent.EntityInteract` fires BEFORE
+`Sheep#mobInteract`. So we can react to "player about to shear sheep"
+before the shear happens. Our handler doesn't cancel the event — the
+shear proceeds. We just apply Wither as a side effect.
+
+**Why not `LivingShearableEvent` or similar.** Forge 1.20.1 doesn't
+have a dedicated post-shear event. Mods that need post-shear hooks
+typically use `LivingEvent.LivingTickEvent` and detect `isSheared`
+state changes, but that's heavier than just hooking the interact event.
+
+**Wither I for 5 seconds.** Wither deals 1 damage every ~40 ticks at
+level I, so 100 ticks (5s) ≈ 2-3 HP penalty. Not enough to kill but
+enough to feel.
+
+**Visible icon.** Wither has a distinctive black skull icon. Player
+sees it pop up and immediately knows something happened.
+
+#### Phase 3.8 — Rabbit jump explosion (2%)
+
+**Vanilla rabbit jump.** Rabbits use `Rabbit.RabbitJumpControl` which
+calls `Rabbit#jumpFromGround()` whenever a jump is triggered. Each
+real jump fires Forge's `LivingEvent.LivingJumpEvent`.
+
+**Why per-jump and not per-tick.** Per-tick rolls would explode rabbits
+that are sitting still. The user said "от прыжка" (from jumping), so
+the event correctly ties the chance to actual jumps. Sitting rabbits
+are safe.
+
+**Power 1.5.** Vanilla creeper = 3.0, TNT = 4.0. Rabbits are tiny.
+1.5 power kills small mobs in 2 blocks but does ~1 block of soft
+terrain damage. Doesn't trash bases when wild rabbits roam by.
+
+**Frequency math.** Rabbits jump every 1-3 seconds during active
+movement, ~30 jumps/min. 2% × 30 = 0.6 explosions/min on average.
+Or roughly 1 every 1-2 minutes per active rabbit. Quietly chaotic.
+
+#### Phase 3.9 — Horse bucking (30%/sec below 30% HP)
+
+**Vanilla horse riding.** `AbstractHorse` lets a player become a
+passenger via `Player#startRiding`. Vanilla horses with low health
+have no bucking AI — they just continue carrying the rider regardless
+of HP.
+
+**Detection cadence.** Tick the horse, every 20 ticks check:
+- Passengers list is non-empty.
+- `getHealth() / getMaxHealth() < 0.30f`.
+
+**Buck implementation.**
+```java
+List<Entity> passengers = List.copyOf(horse.getPassengers());
+horse.ejectPassengers();
+for (Entity p : passengers) {
+    if (p instanceof LivingEntity le) {
+        Vec3 v = le.getDeltaMovement();
+        le.setDeltaMovement(v.x, 0.5, v.z);
+        le.hurtMarked = true;
+    }
+}
+```
+`hurtMarked = true` forces the server to send the velocity update to
+the client immediately. Without it, the client may not see the
+impulse for ~1 tick.
+
+**Probability tuning.** 30% per second at low HP means expected time
+to buck = ~3.3 seconds. Fast enough to feel like a real refusal,
+slow enough that brief HP dips during combat don't always trigger.
+
+**Llamas included.** `Llama extends AbstractChestedHorse extends
+AbstractHorse`. Llamas at low HP also buck. A wounded llama
+throwing off its caravan-leader feels appropriate.
+
+**Camels NOT included.** `Camel` extends `AbstractHorse` in 1.20.1
+mappings, so technically camels are also affected. Documented but
+not separately handled — same code path catches them all.
+
+**Build:** `./gradlew build` clean (one new compilation hiccup: 
+`ItemEntity#getRandom()` doesn't exist as instance method in 1.20.1 —
+fixed by using `level.getRandom()` instead. Other 3 files compiled
+first try). Same `setSecondsOnFire` deprecation warning persists from
+Phase 3.4 (not from this batch). Output `glebthanwolves-1.0.0.jar`
+~98 KB. Delivered to user as
+`glebthanwolves-phase3.6-3.9-mob-quirks.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first
