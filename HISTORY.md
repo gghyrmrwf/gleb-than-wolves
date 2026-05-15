@@ -1077,6 +1077,81 @@ emerald_fragment.
 
 ---
 
+### Phase 3.0 — Nether idle hazard
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested mechanic:** in the Nether, if the player stands on the
+ground for 5 seconds without jumping, they catch fire. Jumping puts the
+fire out. The user specifically called out the obvious exploit ("place
+a block above your head and spam jump") and asked it be blocked — the
+player must actually leave the ground.
+
+**Implementation idea — track airborne ticks, not jump key presses.**
+The simplest robust way to distinguish a real jump from a head-bump
+exploit jump is to require the player to remain airborne for some
+minimum number of consecutive ticks. Under a 2-tall ceiling (the only
+practical "exploit cage" you can build in a couple of seconds), a jump
+launches the player upward at velocity 0.42 blocks/tick. They contact
+the ceiling almost immediately (within ~1 tick at vanilla player
+height 1.8 + 0.2 headroom), and vertical velocity is zeroed, so they
+land within 1–2 ticks. We picked 5 ticks (~250 ms) as the real-jump
+threshold — well above the head-bump zone, well below the ~12-tick
+duration of a free-air jump arc.
+
+**Why we don't just listen to the jump key event.** Forge does have a
+`LivingEvent.LivingJumpEvent` that fires when `Player#jumpFromGround`
+is called. But this fires on the keypress side, including head-bump
+attempts. To block the exploit we need the airborne-duration check
+anyway, so the simpler design is to drive everything off
+`PlayerTickEvent` + `player.onGround()` and skip the jump event
+entirely.
+
+**Why we don't use a Forge-managed capability or persistent NBT.** The
+per-player state (idle counter, airborne streak, "our fire" flag) is
+ephemeral — it lives only while the player is in the Nether and is
+reset on dimension change, logout, and respawn. A static
+`ConcurrentHashMap<UUID, Integer>` is the cheapest implementation. We
+clean up entries on `PlayerLoggedOutEvent` to avoid unbounded growth.
+
+**Fire-clearing safety.** The mechanic distinguishes "our fire" (set
+by us via `setSecondsOnFire(1)`) from "other fire" (lava, fire block,
+blaze attacks) via a per-player boolean flag. On a real jump we only
+call `clearFire()` if the flag is set, AND vanilla logic restores any
+non-self fire on the next tick anyway (lava contact reapplies
+`setSecondsOnFire(15)` automatically). So a player standing in lava
+who jumps will see only a 1-tick gap before lava-fire resumes — the
+mechanic doesn't accidentally save them from lava.
+
+**Edge cases reviewed:**
+- Player riding a strider on lava → strider is `onGround()` because
+  it walks on lava. Player inherits onGround from vehicle in most
+  cases. The player will burn after 5s of standing still on a strider.
+  This is intentional: standing still on a strider is exactly the
+  kind of "idle in Nether" the mechanic targets.
+- Player on a minecart in the Nether → similar: counts as standing if
+  the minecart isn't moving vertically. We accept this.
+- Player using elytra in the Nether → airborne, timer resets. Good.
+- Player climbing scaffolding/vines → airborne, timer resets after 5
+  ticks of climbing. Good (climbing is active state change).
+- Player blown into the air by a ghast → airborne, timer resets. Fair.
+
+**Future tuning ideas (NOT in this PR):**
+- Damage scaling — currently the player just burns for 1s per tick
+  past the threshold. If the burn feels too gentle, we could add a
+  direct `player.hurt(...)` call for extra damage on top of the fire.
+- Warning sound at 4s (just before ignition).
+- Hardness scaling by Nether depth or biome.
+- Same mechanic in the End for a different reward structure.
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar`
+~92 KB. Delivered to user as
+`glebthanwolves-phase3.0-nether-idle-hazard.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first

@@ -1008,6 +1008,75 @@ emerald_fragment.
 
 ---
 
+## Phase 3.0 — Nether idle hazard ("the Nether punishes the still")
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "давай начнём усложнять ад, например если
+стоять и не прыгать 5 секунд то ты начинаешь гореть, но сразу же
+перестаёшь как прыгнешь, учти чтобы игрок не ломал эту механику ставя
+над головой блок и прыгая, то есть он должен именно оторваться от земли"
+
+**Mechanic:** while the player is in the Nether dimension, an idle timer
+ticks up every game tick the player is on the ground. After 100 ticks
+(5 seconds) of continuous ground contact, the player is set on fire (1
+second, refreshed every tick until they leave the ground). Performing a
+real jump resets the timer and clears the fire we set.
+
+**Exploit defense — "real jump" detection.** The mechanic does NOT trust
+the jump key press. Instead it tracks consecutive airborne ticks
+(`!player.onGround()`) and only counts a takeoff as a real jump after
+the player has been airborne for at least 5 ticks (~250 ms). This makes
+the standard "place block above head and spam jump" exploit useless:
+under a 2-block-tall ceiling, a head-bump jump lasts 1–2 ticks before
+the player is forced back to the ground, never reaching the threshold.
+A vanilla free-air jump spans ~12 airborne ticks, comfortably clearing
+the threshold.
+
+**Player states exempt from the mechanic:**
+- Creative / spectator mode.
+- Dead.
+- Sleeping (which is impossible in the Nether anyway, but covered for
+  safety).
+- Outside the Nether (overworld + end + custom dimensions).
+
+**Player states that count as "airborne" and reset the timer (if
+sustained ≥ 5 ticks):**
+- Real free-air jumps.
+- Climbing a ladder, vine, or scaffolding (sustained airborne).
+- Riding an elytra mid-flight.
+- Knockback into the air (e.g. from a Ghast fireball) — counts as
+  active state change, not idleness.
+- Falling off a ledge — yes, this resets the timer. Acceptable: the
+  Nether is full of cliffs and falling counts as forced motion.
+
+**Fire interaction with vanilla heat sources:** the mechanic refreshes
+fire each tick while past the threshold via `setSecondsOnFire(1)`. On
+jump it clears the fire ONLY if it tracked the most-recent fire as
+self-caused (the `OUR_FIRE_ACTIVE` flag). Fire from lava contact, fire
+blocks, soul fire, or Blaze attacks is NEVER cleared by this mechanic
+— vanilla logic restores it on the next tick after any clearFire call,
+so even if a player is on fire from both sources, jumping just removes
+the idle-mechanic portion.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/NetherIdleHazardEvents.java`
+  — new file. Single class with `PlayerTickEvent` + `PlayerLoggedOutEvent`
+  handlers. ~140 lines including thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new NetherIdleHazardEvents()` on the Forge event bus.
+
+**No new items, recipes, loot tables, or localization strings.** This
+is a pure behavior-modification phase, server-side only.
+
+**Tunable constants** (in `NetherIdleHazardEvents.java`):
+- `IGNITE_THRESHOLD_TICKS = 100` (5 s) — idle timer threshold.
+- `REAL_JUMP_AIRBORNE_TICKS = 5` (~250 ms) — minimum airborne duration
+  to count as a real jump.
+- `FIRE_REFRESH_SECONDS = 1` — fire duration refreshed each tick while
+  past the threshold.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

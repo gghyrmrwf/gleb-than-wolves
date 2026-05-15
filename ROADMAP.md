@@ -431,7 +431,15 @@ recipe overrides, legacy-conversion path.
 
 ## Phase 3 plan (sketch only)
 
-### Phase 3.0 — Nether overhaul
+### Phase 3.0 — Nether idle hazard ✅ done
+
+First incremental Nether-difficulty mechanic, delivered ahead of the
+full Nether overhaul. While in the Nether, idle players (on the ground
+for 5 seconds without a real jump) catch fire. Real-jump detection uses
+airborne-tick duration (≥ 5 ticks) to block the "block over head + spam
+jump" exploit. See `HISTORY.md` for the design discussion.
+
+### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.
 - New ores, blocks, crafting blocks unique to the dimension.
