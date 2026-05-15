@@ -25,6 +25,11 @@ public final class ModItems {
     public static final RegistryObject<Item> WOOD_CHUNK = ITEMS.register("wood_chunk",
             () -> new Item(new Item.Properties()));
 
+    /* Phase 2.5 — крафт-материал-осколок. 2 шт → 1 cobblestone (shapeless, без верстака).
+     * Дропается из minecraft:stone вместо cobblestone через датапак-оверрайд лут-таблицы. */
+    public static final RegistryObject<Item> COBBLESTONE_FRAGMENT = ITEMS.register("cobblestone_fragment",
+            () -> new Item(new Item.Properties()));
+
     public static final RegistryObject<Item> PRIMITIVE_AXE = ITEMS.register("primitive_axe",
             () -> new PrimitiveAxeItem(PrimitiveAxeItem.PRIMITIVE_TIER, 5.0f, -3.2f,
                     new Item.Properties().durability(8)));

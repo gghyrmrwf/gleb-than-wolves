@@ -284,6 +284,47 @@ combine back):
    amethyst clusters, copper variants, slabs / stairs / walls of every
    stone family, banners, shulker boxes, etc.).
 
+### Phase 2.5+ — Targeted shards (current plan, replaces failed 2.3b)
+
+After the rollback of 2.3b (151-recipe 18-category disaster), the agreed
+plan is **one shard per material, one small PR each, only for blocks/ores
+that are needed in vanilla crafts**. Each shard ships independently, the
+user tests, signs off, then the next one is built.
+
+**Final agreed shard list (in implementation order):**
+
+| Order | Shard | Ratio | Source blocks | Status |
+|---|---|---|---|---|
+| 1 | `cobblestone_fragment` | 2 → 1 cobble | `minecraft:stone` only | ✅ Phase 2.5 done |
+| 2 | `iron_fragment` | 4 → 1 raw_iron | `iron_ore`, `deepslate_iron_ore` | planned |
+| 3 | `gold_fragment` | 4 → 1 raw_gold | `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | planned |
+| 4 | `diamond_fragment` | 4 → 1 diamond | `diamond_ore`, `deepslate_diamond_ore` | planned |
+| 5 | `copper_fragment` | 4 → 1 raw_copper | `copper_ore`, `deepslate_copper_ore` | planned |
+| 6 | `quartz_fragment` | 4 → 1 nether_quartz | `nether_quartz_ore` | planned |
+| 7 | `coal_fragment` | 2 → 1 coal | `coal_ore`, `deepslate_coal_ore` | planned |
+
+**Skipped (per user):** netherite tools, lapis_fragment, emerald_fragment.
+
+**Implementation pattern (lessons from failed 2.3b):**
+
+1. **Override the vanilla loot table** at `data/minecraft/loot_tables/blocks/<ore>.json`
+   — single file, replaces the entire vanilla drop pool. Silk-touch path
+   preserved when it makes sense (e.g. `minecraft:stone` block under
+   silk touch still drops `minecraft:stone`).
+2. **One shapeless recipe** at `data/glebthanwolves/recipes/<material>_from_fragments.json`
+   — N fragments → 1 vanilla material item. Player crafts in 2×2 inventory
+   grid, no table needed.
+3. **No mining-gate, no whitelist, no default-deny.** Vanilla tier gating
+   (`needs_*_tool`) already handles "wrong pickaxe → no drop"; the shard
+   override only changes WHAT drops when the pickaxe IS correct.
+4. **Fortune behavior:** preserve vanilla — ore shards inherit the same
+   `apply_bonus(fortune, ore_drops)` function the original loot table used.
+   `minecraft:stone` → `cobblestone_fragment` does NOT get Fortune, since
+   vanilla cobble from stone also doesn't.
+5. **Chest loot untouched.** Player can still find vanilla ingots/gems in
+   chests (mineshaft, dungeon, etc.). May revisit later if it undermines
+   the shard mechanic too much.
+
 ### Phase 2.3c — Found tools weaker (planned, deferred)
 
 User said in chat (Q7): "пока ничего не делаем, а потом заменим спавн на

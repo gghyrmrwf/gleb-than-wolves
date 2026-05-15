@@ -899,6 +899,65 @@ If issues surface, registering them is a one-liner in `GtwTiers.java`.
 
 ---
 
+### Phase 2.5 — Cobblestone fragment (first targeted shard)
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User decisions leading to this phase (verbatim):**
+
+> «не хочу вообще делать незеритовые вещи. добавь осколок угля, но уголь
+> можно сделать из двух осколков. убери осколки изумруда, лазурита.
+> начинай делать»
+
+> «ещё нужен осколок булыжника, который выпадает из всех камней с которых
+> можно выбить булыжник в ванильном майнкрафте»
+
+> «да, только правда стоит сделать 2 осколка булыжника для крафта»
+
+**Final agreed shard list (planned, one PR each):**
+
+| Order | Shard | Ratio | Source blocks |
+|---|---|---|---|
+| **1** | **cobblestone_fragment** | **2 → 1 cobblestone** | minecraft:stone (only vanilla "stone-that-drops-cobble") |
+| 2 | iron_fragment | 4 → 1 raw_iron | iron_ore, deepslate_iron_ore |
+| 3 | gold_fragment | 4 → 1 raw_gold | gold_ore, deepslate_gold_ore, nether_gold_ore |
+| 4 | diamond_fragment | 4 → 1 diamond | diamond_ore, deepslate_diamond_ore |
+| 5 | copper_fragment | 4 → 1 raw_copper | copper_ore, deepslate_copper_ore |
+| 6 | quartz_fragment | 4 → 1 nether_quartz | nether_quartz_ore |
+| 7 | coal_fragment | 2 → 1 coal | coal_ore, deepslate_coal_ore |
+
+**Skipped intentionally:** netherite tools (user explicitly declined),
+lapis_fragment, emerald_fragment.
+
+**What got implemented in this PR:**
+
+- Added `glebthanwolves:cobblestone_fragment` item.
+- Added shapeless recipe `2× fragment → 1 cobblestone` (works in player
+  inventory 2×2 grid, no crafting table needed).
+- Overrode `minecraft:stone` loot table — non-silk-touch drop swapped from
+  `minecraft:cobblestone` to `glebthanwolves:cobblestone_fragment`.
+  Silk touch path unchanged (still drops `minecraft:stone` block).
+- en/ru localization, item model reusing `minecraft:block/cobblestone`
+  texture (placeholder, no custom asset yet).
+- Added to main creative tab between `wood_chunk` and `primitive_axe`.
+
+**Not implemented (intentional):**
+
+- Chest loot containing cobblestone is untouched (user said leave chests
+  alone for now).
+- Andesite/granite/diorite/tuff/calcite/basalt unchanged — they drop
+  themselves in vanilla, not cobblestone.
+- Deepslate path unchanged — drops `cobbled_deepslate` (different item).
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar`
+79.5 KB. Delivered to user as `glebthanwolves-phase2.5-cobble-fragment.jar`.
+
+**Next shard (after user OK on cobble):** iron_fragment.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first

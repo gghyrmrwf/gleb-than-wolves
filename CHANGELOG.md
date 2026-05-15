@@ -792,6 +792,59 @@ for "important" blocks, after this mining-gate is validated stable.
 
 ---
 
+## Phase 2.5 — Cobblestone fragment (first targeted shard)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Approach:** instead of mining `minecraft:stone` and getting `cobblestone`
+directly, the block now drops `glebthanwolves:cobblestone_fragment`. The
+player combines **2 fragments → 1 cobblestone** in any 2×2 grid (inventory
+crafting works, no table needed).
+
+**Why only `minecraft:stone`:** in vanilla, only the generic gray stone block
+drops cobblestone when mined. Andesite/granite/diorite/tuff/calcite/basalt
+all drop themselves, so they are untouched. Deepslate drops cobbled_deepslate
+which is a different item — also untouched.
+
+**Effect on progression:**
+- Vanilla: 1 stone broken → 1 cobblestone (1× mining cost).
+- Now: 1 stone broken → 1 fragment, so 2 stones broken → 1 cobblestone
+  (2× mining cost).
+- 3 cobblestone needed for `glebthanwolves:stone_pickaxe`, so player must mine
+  6 stone blocks (was 3) to advance from wood to stone tier.
+
+**Silk Touch:** preserved — Silk Touch pickaxe on `minecraft:stone` still
+drops a `minecraft:stone` block, as in vanilla. Only the non-silk path is
+diverted to fragments.
+
+**Fortune:** does NOT apply to this drop (vanilla cobble from stone also
+ignored Fortune, so consistent).
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModItems.java`
+  — registers `COBBLESTONE_FRAGMENT` after `WOOD_CHUNK`.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModCreativeTabs.java`
+  — adds fragment after wood_chunk in main creative tab.
+- `src/main/resources/assets/glebthanwolves/lang/en_us.json`
+  — `"Cobblestone Fragment"`.
+- `src/main/resources/assets/glebthanwolves/lang/ru_ru.json`
+  — `"Осколок булыжника"`.
+- `src/main/resources/assets/glebthanwolves/models/item/cobblestone_fragment.json`
+  — `item/generated`, texture `minecraft:block/cobblestone` (placeholder,
+  no custom texture yet — visually a small cobble cube).
+- `src/main/resources/data/glebthanwolves/recipes/cobblestone_from_fragments.json`
+  — shapeless 2× fragment → 1 cobblestone.
+- `src/main/resources/data/minecraft/loot_tables/blocks/stone.json`
+  — overrides vanilla loot table: silk_touch → minecraft:stone,
+  otherwise → glebthanwolves:cobblestone_fragment.
+
+**Not addressed in this PR (intentional):**
+- Chest loot still contains vanilla cobblestone. Future GLM pass could
+  replace cobble in chest loot with fragments for consistency, but the user
+  explicitly said leave chests alone for now.
+- Zombie holding cobblestone (rare drop in some variants) — untouched.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
