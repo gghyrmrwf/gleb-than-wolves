@@ -33,4 +33,17 @@ public class ModSounds {
                     new ResourceLocation(GlebThanWolves.MODID, "pig_explode")
             )
     );
+
+    /**
+     * Phase 3.13 — sound played when a creeper detonates.
+     *
+     * <p>Linked to {@code creeper_explode.ogg} via {@code sounds.json}.
+     * Plays on top of the vanilla explosion thump.
+     */
+    public static final RegistryObject<SoundEvent> CREEPER_EXPLODE = SOUND_EVENTS.register(
+            "creeper_explode",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(GlebThanWolves.MODID, "creeper_explode")
+            )
+    );
 }

@@ -8,5 +8,15 @@
         "stream": false
       }
     ]
+  },
+  "creeper_explode": {
+    "category": "hostile",
+    "subtitle": "subtitles.glebthanwolves.creeper_explode",
+    "sounds": [
+      {
+        "name": "glebthanwolves:creeper_explode",
+        "stream": false
+      }
+    ]
   }
 }

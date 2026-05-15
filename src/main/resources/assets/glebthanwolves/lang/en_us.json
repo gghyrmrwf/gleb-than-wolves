@@ -37,5 +37,6 @@
   "item.glebthanwolves.diamond_shovel": "Crude Diamond Shovel",
   "item.glebthanwolves.diamond_hoe": "Crude Diamond Hoe",
 
-  "subtitles.glebthanwolves.pig_explode": "Pig detonates"
+  "subtitles.glebthanwolves.pig_explode": "Pig detonates",
+  "subtitles.glebthanwolves.creeper_explode": "Creeper detonates"
 }

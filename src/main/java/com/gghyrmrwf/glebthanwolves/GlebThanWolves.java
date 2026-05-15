@@ -6,6 +6,7 @@ import com.gghyrmrwf.glebthanwolves.events.AngryHorseBuckEvents;
 import com.gghyrmrwf.glebthanwolves.events.BedIgnitesFloorEvents;
 import com.gghyrmrwf.glebthanwolves.events.BushcraftBreakEvents;
 import com.gghyrmrwf.glebthanwolves.events.ChickenLaysTntEvents;
+import com.gghyrmrwf.glebthanwolves.events.CreeperExplodeSoundEvents;
 import com.gghyrmrwf.glebthanwolves.events.EndermanProximityAggroEvents;
 import com.gghyrmrwf.glebthanwolves.events.ExplodingPigEvents;
 import com.gghyrmrwf.glebthanwolves.events.ExplodingRabbitJumpEvents;
@@ -56,6 +57,7 @@ public class GlebThanWolves {
         MinecraftForge.EVENT_BUS.register(new AngryHorseBuckEvents());
         MinecraftForge.EVENT_BUS.register(new EndermanProximityAggroEvents());
         MinecraftForge.EVENT_BUS.register(new BedIgnitesFloorEvents());
+        MinecraftForge.EVENT_BUS.register(new CreeperExplodeSoundEvents());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
