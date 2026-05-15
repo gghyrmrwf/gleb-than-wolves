@@ -19,6 +19,13 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.PLANT_FIBER.get());
                         output.accept(ModItems.PLANT_CORDAGE.get());
                         output.accept(ModItems.WOOD_CHUNK.get());
+                        output.accept(ModItems.COBBLESTONE_FRAGMENT.get());
+                        output.accept(ModItems.IRON_FRAGMENT.get());
+                        output.accept(ModItems.GOLD_FRAGMENT.get());
+                        output.accept(ModItems.DIAMOND_FRAGMENT.get());
+                        output.accept(ModItems.COPPER_FRAGMENT.get());
+                        output.accept(ModItems.QUARTZ_FRAGMENT.get());
+                        output.accept(ModItems.COAL_FRAGMENT.get());
                         output.accept(ModItems.PRIMITIVE_AXE.get());
                         output.accept(ModItems.WOODEN_PICKAXE.get());
                         output.accept(ModItems.WOODEN_AXE.get());
@@ -35,6 +42,11 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.IRON_SWORD.get());
                         output.accept(ModItems.IRON_SHOVEL.get());
                         output.accept(ModItems.IRON_HOE.get());
+                        output.accept(ModItems.DIAMOND_PICKAXE.get());
+                        output.accept(ModItems.DIAMOND_AXE.get());
+                        output.accept(ModItems.DIAMOND_SWORD.get());
+                        output.accept(ModItems.DIAMOND_SHOVEL.get());
+                        output.accept(ModItems.DIAMOND_HOE.get());
                     })
                     .build());
 

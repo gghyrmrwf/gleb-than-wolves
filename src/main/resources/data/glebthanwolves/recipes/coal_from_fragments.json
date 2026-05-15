@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "glebthanwolves:coal_fragment" },
+    { "item": "glebthanwolves:coal_fragment" }
+  ],
+  "result": {
+    "item": "minecraft:coal",
+    "count": 1
+  }
+}

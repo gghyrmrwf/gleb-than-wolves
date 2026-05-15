@@ -1,0 +1,22 @@
+{
+  "pig_explode": {
+    "category": "hostile",
+    "subtitle": "subtitles.glebthanwolves.pig_explode",
+    "sounds": [
+      {
+        "name": "glebthanwolves:pig_explode",
+        "stream": false
+      }
+    ]
+  },
+  "creeper_explode": {
+    "category": "hostile",
+    "subtitle": "subtitles.glebthanwolves.creeper_explode",
+    "sounds": [
+      {
+        "name": "glebthanwolves:creeper_explode",
+        "stream": false
+      }
+    ]
+  }
+}

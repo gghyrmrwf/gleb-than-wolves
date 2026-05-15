@@ -4,6 +4,13 @@
   "item.glebthanwolves.plant_fiber": "Plant Fiber",
   "item.glebthanwolves.plant_cordage": "Plant Cordage",
   "item.glebthanwolves.wood_chunk": "Wood Chunk",
+  "item.glebthanwolves.cobblestone_fragment": "Cobblestone Fragment",
+  "item.glebthanwolves.iron_fragment": "Iron Fragment",
+  "item.glebthanwolves.gold_fragment": "Gold Fragment",
+  "item.glebthanwolves.diamond_fragment": "Diamond Fragment",
+  "item.glebthanwolves.copper_fragment": "Copper Fragment",
+  "item.glebthanwolves.quartz_fragment": "Quartz Fragment",
+  "item.glebthanwolves.coal_fragment": "Coal Fragment",
   "item.glebthanwolves.primitive_axe": "Primitive Axe",
 
   "item.glebthanwolves.wooden_pickaxe": "Crude Wooden Pickaxe",
@@ -22,5 +29,14 @@
   "item.glebthanwolves.iron_axe": "Crude Iron Axe",
   "item.glebthanwolves.iron_sword": "Crude Iron Sword",
   "item.glebthanwolves.iron_shovel": "Crude Iron Shovel",
-  "item.glebthanwolves.iron_hoe": "Crude Iron Hoe"
+  "item.glebthanwolves.iron_hoe": "Crude Iron Hoe",
+
+  "item.glebthanwolves.diamond_pickaxe": "Crude Diamond Pickaxe",
+  "item.glebthanwolves.diamond_axe": "Crude Diamond Axe",
+  "item.glebthanwolves.diamond_sword": "Crude Diamond Sword",
+  "item.glebthanwolves.diamond_shovel": "Crude Diamond Shovel",
+  "item.glebthanwolves.diamond_hoe": "Crude Diamond Hoe",
+
+  "subtitles.glebthanwolves.pig_explode": "Pig detonates",
+  "subtitles.glebthanwolves.creeper_explode": "Creeper detonates"
 }

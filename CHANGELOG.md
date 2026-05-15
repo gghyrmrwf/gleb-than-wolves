@@ -671,6 +671,976 @@ the 46 vanilla recipe overrides from Phase 2.0/2.1.
 
 ---
 
+## Phase 2.2.y — Crude diamond tools (top of the GTW tier ladder)
+
+User asked to finish the diamond tier before starting the big shard /
+mining-logic work, mirroring the wooden / stone / iron pattern from
+Phase 2.2 / 2.2.x.
+
+**Files:**
+- `items/GtwTiers.java` — adds `GTW_DIAMOND` next to the wooden / stone
+  / iron tiers:
+  - `GTW_DIAMOND` — durability 780 (vs vanilla 1561), mining speed 6.0
+    (vs 8.0), +3.0 attack damage, mining level 3, enchantability 10,
+    repair = `diamond`. Mirrors `Tiers.DIAMOND`.
+- `ModItems.java` — registers 5 new items: `diamond_pickaxe`,
+  `diamond_axe`, `diamond_sword`, `diamond_shovel`, `diamond_hoe`. As
+  with the other tiers, constructor args (damage / attack speed) are
+  vanilla baselines so HUD attack stats match vanilla diamond exactly.
+- `ModCreativeTabs.java` — appends the 5 new items to the main tab
+  after the iron block (final order: primitive → wooden → stone → iron
+  → diamond).
+- `assets/glebthanwolves/lang/en_us.json` + `ru_ru.json` — 5 new lang
+  entries each ("Crude Diamond *" / "Грубый алмазный *" etc.).
+- `assets/glebthanwolves/models/item/diamond_*.json` — 5 item models,
+  reusing vanilla textures (`minecraft:item/diamond_*`).
+- `data/glebthanwolves/recipes/diamond_*.json` — 5 shaped recipes on a
+  3×3 crafting table, same shape as Phase 2.2 / 2.2.x. Use
+  `minecraft:diamond` + stick + `glebthanwolves:plant_cordage`. Sword
+  has cordage as the handle (no stick).
+
+**Stats per tool** (HUD numbers — match vanilla diamond exactly):
+
+| Item | Durability | Mining speed | Attack damage | Attack speed |
+|---|---|---|---|---|
+| `diamond_pickaxe` | 780 | 6.0 | 5 | -2.8 |
+| `diamond_axe`     | 780 | 6.0 | 9 | -3.0 |
+| `diamond_sword`   | 780 | 6.0 | 7 | -2.4 |
+| `diamond_shovel`  | 780 | 6.0 | 5.5 | -3.0 |
+| `diamond_hoe`     | 780 | 6.0 | 1 | 0.0 |
+
+(HUD attack damage = constructor baseline + tier bonus +3.0 + 1.0
+player base.)
+
+**Did not change:** `MiningGate.java`, the 6 `breakable_by/*` tags
+(still empty per Phase 2.3a), `HardcoreEvents.java`, `WorldEvents.java`,
+`BushcraftBreakEvents.java`, `PrimitiveAxeItem.java`, GLM modifiers,
+vanilla recipe overrides from Phase 2.0 / 2.1, all earlier Phase 2.2 /
+2.2.x / 2.3a artifacts.
+
+**Open issues carried forward:**
+- Same as Phase 2.2 / 2.2.x: no recipe advancements emitted, models
+  reuse vanilla textures.
+- Mining Gate still empty — these tools (and all earlier GTW tools)
+  can be crafted but cannot break any block until the whitelist gets
+  populated. That is the goal of the next, much larger PR (Phase
+  2.3b — shards + 24-category mining logic).
+- No netherite tier yet. Diamond is the current ceiling.
+
+---
+
+## Phase 2.3b — Block shards (DELIVERED, then ROLLED BACK)
+
+**Branch:** `devin/1778192365-phase-2-3b-impl`
+**Design PR:** [#7](https://github.com/gghyrmrwf/gleb-than-wolves/pull/7) — abandoned
+**Impl PR:** [#8](https://github.com/gghyrmrwf/gleb-than-wolves/pull/8) — abandoned
+
+**Built:** 18 shard categories, 151 recombine recipes, populated mining-gate,
+custom GLM codec, item rename via `MissingMappingsEvent`, `MINING_DESIGN.md`
+spec doc.
+
+**Failed because:**
+1. One shard mapped to many recipes → only first alphabetically fired (rest dead).
+2. Overgeneralized categories (`compressed_metal_fragment`, `precious_fragment`)
+   produced thematically nonsensical outputs.
+3. Default-deny `MiningGate` whitelist made too many vanilla blocks unminable
+   in practice ("blocks just don't break").
+
+**User reaction:** "полный мусор без логики, максимальный бред и халатность".
+Demanded full rollback to Phase 2.2.x state.
+
+---
+
+## Phase 2.3 — Tier tightening via vanilla tag overrides (current)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten`
+**PR:** [#9](https://github.com/gghyrmrwf/gleb-than-wolves/pull/9)
+**Replaces:** PR #6 (diamond tools, cherry-picked in), PR #7, PR #8.
+
+**Approach:**
+- Removed `MiningGate.java` + all `breakable_by/*.json` tags.
+- Restored vanilla mining semantics (wrong tool breaks block silently, no drop).
+- Cherry-picked diamond tools (`d61ac87`).
+- Added datapack overrides on vanilla `minecraft:needs_*_tool` tags.
+
+**`needs_iron_tool` (require iron pickaxe to drop):**
+- copper, deepslate_copper (was stone)
+- lapis, deepslate_lapis (was stone)
+- nether_gold (was wood)
+- amethyst_block + budding + 4 cluster/bud states (was wood)
+- end_stone + end_stone_bricks + decorative variants (was wood)
+- bell, anvil + chipped + damaged (was wood)
+- shulker_box + 16 dyed colors (was wood)
+
+**`needs_stone_tool` (require stone pickaxe to drop):**
+- nether_quartz (was wood)
+- magma_block (was wood)
+
+**Glowstone NOT tightened** — vanilla block has no `requiresCorrectToolForDrops`,
+so tag-based tightening has no effect. Would require mixin to fix.
+
+**Progression:**
+```
+hand → primitive_axe → wood pickaxe → stone pickaxe (cobblestone, coal)
+  → iron pickaxe (iron, copper, lapis, nether_gold, amethyst, end_stone, etc.)
+  → diamond pickaxe (obsidian, ancient_debris)
+  → netherite (placeholder, not yet implemented)
+```
+
+**No shards in this PR.** Per user: shards will be added one at a time, only
+for "important" blocks, after this mining-gate is validated stable.
+
+---
+
+## Phase 2.5 — Cobblestone fragment (first targeted shard)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Approach:** instead of mining `minecraft:stone` and getting `cobblestone`
+directly, the block now drops `glebthanwolves:cobblestone_fragment`. The
+player combines **2 fragments → 1 cobblestone** in any 2×2 grid (inventory
+crafting works, no table needed).
+
+**Why only `minecraft:stone`:** in vanilla, only the generic gray stone block
+drops cobblestone when mined. Andesite/granite/diorite/tuff/calcite/basalt
+all drop themselves, so they are untouched. Deepslate drops cobbled_deepslate
+which is a different item — also untouched.
+
+**Effect on progression:**
+- Vanilla: 1 stone broken → 1 cobblestone (1× mining cost).
+- Now: 1 stone broken → 1 fragment, so 2 stones broken → 1 cobblestone
+  (2× mining cost).
+- 3 cobblestone needed for `glebthanwolves:stone_pickaxe`, so player must mine
+  6 stone blocks (was 3) to advance from wood to stone tier.
+
+**Silk Touch:** preserved — Silk Touch pickaxe on `minecraft:stone` still
+drops a `minecraft:stone` block, as in vanilla. Only the non-silk path is
+diverted to fragments.
+
+**Fortune:** does NOT apply to this drop (vanilla cobble from stone also
+ignored Fortune, so consistent).
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModItems.java`
+  — registers `COBBLESTONE_FRAGMENT` after `WOOD_CHUNK`.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModCreativeTabs.java`
+  — adds fragment after wood_chunk in main creative tab.
+- `src/main/resources/assets/glebthanwolves/lang/en_us.json`
+  — `"Cobblestone Fragment"`.
+- `src/main/resources/assets/glebthanwolves/lang/ru_ru.json`
+  — `"Осколок булыжника"`.
+- `src/main/resources/assets/glebthanwolves/models/item/cobblestone_fragment.json`
+  — `item/generated`, texture `minecraft:block/cobblestone` (placeholder,
+  no custom texture yet — visually a small cobble cube).
+- `src/main/resources/data/glebthanwolves/recipes/cobblestone_from_fragments.json`
+  — shapeless 2× fragment → 1 cobblestone.
+- `src/main/resources/data/minecraft/loot_tables/blocks/stone.json`
+  — overrides vanilla loot table: silk_touch → minecraft:stone,
+  otherwise → glebthanwolves:cobblestone_fragment.
+
+**Not addressed in this PR (intentional):**
+- Chest loot still contains vanilla cobblestone. Future GLM pass could
+  replace cobble in chest loot with fragments for consistency, but the user
+  explicitly said leave chests alone for now.
+- Zombie holding cobblestone (rare drop in some variants) — untouched.
+
+---
+
+## Phase 2.6 — Iron fragment (targeted shard #2)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Approach:** mining iron ore now drops `glebthanwolves:iron_fragment` instead
+of `minecraft:raw_iron`. Player combines **4 fragments → 1 raw_iron** via a
+shaped 2×2 recipe (works in inventory grid, no table needed). Raw iron is
+then smelted in a furnace into iron ingot as in vanilla.
+
+**Source blocks:**
+- `minecraft:iron_ore` (overworld surface/cave layer)
+- `minecraft:deepslate_iron_ore` (deepslate layer)
+
+**Effect on progression:**
+- Vanilla: 1 iron ore broken → 1 raw_iron → 1 iron_ingot (1×).
+- Now: 1 iron ore broken → 1 fragment, so 4 iron ores → 1 raw_iron →
+  1 iron_ingot (4× mining cost).
+- Iron tools require 3 iron_ingots in our crude_iron_pickaxe recipe →
+  12 iron ores mined (was 3) to advance from stone to iron tier.
+
+**Silk Touch:** preserved. Silk-touch pickaxe on iron_ore / deepslate_iron_ore
+still drops the ore block itself (as in vanilla). Only the non-silk path is
+diverted to fragments.
+
+**Fortune:** preserved. Fortune III on iron fragments behaves like Fortune III
+on vanilla raw_iron — `apply_bonus(fortune, ore_drops)` function is applied
+to the fragment drop, so Fortune III gives up to 4 fragments per ore (same
+as vanilla 1-4 raw_iron). Net effect with Fortune III: still ~1 ingot per
+ore on average, fragment system effectively neutralized at max Fortune.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModItems.java`
+  — registers `IRON_FRAGMENT` after `COBBLESTONE_FRAGMENT`.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/ModCreativeTabs.java`
+  — adds iron fragment after cobble fragment in main creative tab.
+- `src/main/resources/assets/glebthanwolves/lang/en_us.json`
+  — `"Iron Fragment"`.
+- `src/main/resources/assets/glebthanwolves/lang/ru_ru.json`
+  — `"Осколок железа"`.
+- `src/main/resources/assets/glebthanwolves/models/item/iron_fragment.json`
+  — `item/generated`, texture `minecraft:item/raw_iron` (placeholder).
+- `src/main/resources/data/glebthanwolves/recipes/raw_iron_from_fragments.json`
+  — shaped 2×2 `iron_fragment` → 1 `raw_iron`.
+- `src/main/resources/data/minecraft/loot_tables/blocks/iron_ore.json`
+  — overrides vanilla loot table.
+- `src/main/resources/data/minecraft/loot_tables/blocks/deepslate_iron_ore.json`
+  — overrides vanilla loot table.
+
+**Not addressed in this PR (intentional):**
+- Chest loot containing raw_iron / iron_ingot is untouched (per user preference).
+- Zombie/skeleton iron equipment drops untouched.
+- Iron golem death drop (1-2 iron_ingot, 0-2 poppy) untouched.
+
+---
+
+## Phase 2.7-2.11 — Remaining targeted shards (gold, diamond, copper, quartz, coal)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "работает, можешь делать дальше" then
+"просто постепенно делай, отчитывайся, а я буду говорить тебе делать
+дальше или нет. можешь продолжить"
+
+Five shards delivered in one batch (one commit, one jar) following the
+same loot-table-override + recipe pattern as Phase 2.5/2.6. Each shard
+ratio and source-block list matches the agreed plan.
+
+### Phase 2.7 — Gold fragment
+
+**Ratio:** 4 → 1 `minecraft:raw_gold` (shaped 2×2).
+**Sources:**
+- `minecraft:gold_ore` (overworld) — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_gold_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:nether_gold_ore` — **2-6 fragments uniform**, Fortune(uniform_bonus_count, bonusMultiplier=1).
+  This preserves the vanilla "nether gold is richer" feel — vanilla nether_gold_ore drops 2-6 gold_nuggets.
+
+**Effect:** overworld gold path is 4× harder. Nether gold path remains
+"richer than overworld" (2-6 fragments) but in fragment terms instead of
+nugget terms, so player still needs to combine to raw_gold.
+
+### Phase 2.8 — Diamond fragment
+
+**Ratio:** 4 → 1 `minecraft:diamond` (shaped 2×2).
+**Sources:**
+- `minecraft:diamond_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_diamond_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 4× harder to reach 1 diamond. Fortune III still gives 1-4
+fragments per ore (matches vanilla 1-4 diamond per ore at max Fortune).
+
+### Phase 2.9 — Copper fragment
+
+**Ratio:** 4 → 1 `minecraft:raw_copper` (shaped 2×2).
+**Sources:**
+- `minecraft:copper_ore` — **2-5 fragments uniform**, Fortune(ore_drops).
+- `minecraft:deepslate_copper_ore` — **2-5 fragments uniform**, Fortune(ore_drops).
+
+**Effect:** vanilla copper drops 2-5 raw_copper. Now drops 2-5 fragments,
+so 2-5 ÷ 4 = 0.5-1.25 raw_copper per ore (avg ~0.9). About 4× harder than
+vanilla on the ingot path. Players still see "copper drops a lot of stuff
+per ore", just need to combine.
+
+### Phase 2.10 — Quartz fragment
+
+**Ratio:** 4 → 1 `minecraft:quartz` (shaped 2×2).
+**Sources:**
+- `minecraft:nether_quartz_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 4× harder to reach 1 quartz. Important because nether quartz
+is gated behind Phase 2.3 `needs_stone_tool` tag — player must have stone
+pickaxe to even mine the ore in the first place. With fragments this is
+a strong nerf to comparator/observer/daylight sensor production.
+
+### Phase 2.11 — Coal fragment (2:1 ratio, different from others)
+
+**Ratio:** **2 → 1 `minecraft:coal` (shapeless, 2 items in inventory grid).**
+Different ratio per explicit user request.
+
+**Sources:**
+- `minecraft:coal_ore` — 1 fragment per ore, Fortune(ore_drops).
+- `minecraft:deepslate_coal_ore` — 1 fragment per ore, Fortune(ore_drops).
+
+**Effect:** 2× harder to reach 1 coal. Affects torches (1 coal + 1 stick =
+4 torches) and smelting fuel. Charcoal path (1 log + furnace → 1 charcoal)
+is still vanilla and unaffected, so player can fall back to charcoal.
+
+### Files (all 5 phases combined)
+
+- **Java:** `ModItems.java` (+5 fragment item registrations),
+  `ModCreativeTabs.java` (+5 display entries).
+- **Localization:** `en_us.json` (+5 entries), `ru_ru.json` (+5 entries).
+- **Models:** 5 new files at `assets/glebthanwolves/models/item/*_fragment.json`,
+  each reusing the closest vanilla item texture (raw_gold, diamond, raw_copper,
+  quartz, coal) — no custom assets yet.
+- **Recipes:** 5 new files at `data/glebthanwolves/recipes/`:
+  `raw_gold_from_fragments.json` (shaped 2×2),
+  `diamond_from_fragments.json` (shaped 2×2),
+  `raw_copper_from_fragments.json` (shaped 2×2),
+  `nether_quartz_from_fragments.json` (shaped 2×2),
+  `coal_from_fragments.json` (shapeless 2×).
+- **Loot table overrides:** 10 new files at
+  `data/minecraft/loot_tables/blocks/`:
+  `gold_ore.json`, `deepslate_gold_ore.json`, `nether_gold_ore.json`,
+  `diamond_ore.json`, `deepslate_diamond_ore.json`,
+  `copper_ore.json`, `deepslate_copper_ore.json`,
+  `nether_quartz_ore.json`,
+  `coal_ore.json`, `deepslate_coal_ore.json`.
+
+**Build:** `./gradlew build` clean. Output `glebthanwolves-1.0.0.jar` 90.8 KB
+(up from 79.7 KB at end of Phase 2.6).
+
+**Not addressed (intentional, per user preference):**
+- Chest loot is not touched in any of these phases. Vanilla raw_gold,
+  raw_copper, diamond, quartz, coal in chests still drop as in vanilla.
+- Drowned-with-gold-nugget drops (rare) untouched.
+- Piglin barter outputs untouched.
+- Quartz blocks crafted from quartz items: ingredient is still
+  `minecraft:quartz` (not the fragment), so player must combine fragments
+  before crafting quartz block.
+
+**Skipped permanently (per user decision):** netherite tools, lapis_fragment,
+emerald_fragment.
+
+---
+
+## Phase 3.0 — Nether idle hazard ("the Nether punishes the still")
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "давай начнём усложнять ад, например если
+стоять и не прыгать 5 секунд то ты начинаешь гореть, но сразу же
+перестаёшь как прыгнешь, учти чтобы игрок не ломал эту механику ставя
+над головой блок и прыгая, то есть он должен именно оторваться от земли"
+
+**Mechanic:** while the player is in the Nether dimension, an idle timer
+ticks up every game tick the player is on the ground. After 100 ticks
+(5 seconds) of continuous ground contact, the player is set on fire (1
+second, refreshed every tick until they leave the ground). Performing a
+real jump resets the timer and clears the fire we set.
+
+**Exploit defense — "real jump" detection.** The mechanic does NOT trust
+the jump key press. Instead it tracks consecutive airborne ticks
+(`!player.onGround()`) and only counts a takeoff as a real jump after
+the player has been airborne for at least 5 ticks (~250 ms). This makes
+the standard "place block above head and spam jump" exploit useless:
+under a 2-block-tall ceiling, a head-bump jump lasts 1–2 ticks before
+the player is forced back to the ground, never reaching the threshold.
+A vanilla free-air jump spans ~12 airborne ticks, comfortably clearing
+the threshold.
+
+**Player states exempt from the mechanic:**
+- Creative / spectator mode.
+- Dead.
+- Sleeping (which is impossible in the Nether anyway, but covered for
+  safety).
+- Outside the Nether (overworld + end + custom dimensions).
+
+**Player states that count as "airborne" and reset the timer (if
+sustained ≥ 5 ticks):**
+- Real free-air jumps.
+- Climbing a ladder, vine, or scaffolding (sustained airborne).
+- Riding an elytra mid-flight.
+- Knockback into the air (e.g. from a Ghast fireball) — counts as
+  active state change, not idleness.
+- Falling off a ledge — yes, this resets the timer. Acceptable: the
+  Nether is full of cliffs and falling counts as forced motion.
+
+**Fire interaction with vanilla heat sources:** the mechanic refreshes
+fire each tick while past the threshold via `setSecondsOnFire(1)`. On
+jump it clears the fire ONLY if it tracked the most-recent fire as
+self-caused (the `OUR_FIRE_ACTIVE` flag). Fire from lava contact, fire
+blocks, soul fire, or Blaze attacks is NEVER cleared by this mechanic
+— vanilla logic restores it on the next tick after any clearFire call,
+so even if a player is on fire from both sources, jumping just removes
+the idle-mechanic portion.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/NetherIdleHazardEvents.java`
+  — new file. Single class with `PlayerTickEvent` + `PlayerLoggedOutEvent`
+  handlers. ~140 lines including thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new NetherIdleHazardEvents()` on the Forge event bus.
+
+**No new items, recipes, loot tables, or localization strings.** This
+is a pure behavior-modification phase, server-side only.
+
+**Tunable constants** (in `NetherIdleHazardEvents.java`):
+- `IGNITE_THRESHOLD_TICKS = 100` (5 s) — idle timer threshold.
+- `REAL_JUMP_AIRBORNE_TICKS = 5` (~250 ms) — minimum airborne duration
+  to count as a real jump.
+- `FIRE_REFRESH_SECONDS = 1` — fire duration refreshed each tick while
+  past the threshold.
+
+**User feedback:** "доп урон не нужен, а так всё работает" — confirmed
+working, no extra damage layer needed.
+
+---
+
+## Phase 3.1 — Piglins always hostile
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Свинолюди всегда враждебны"
+from a multiple-choice prompt of further Nether-difficulty mechanics.
+
+**Mechanic:** piglins (the regular `Piglin` entity, not Brutes or
+Zoglins) attack any nearby player regardless of whether the player
+wears gold armor. The classic "throw a gold ingot to distract them"
+trick also stops working — they no longer admire dropped gold items.
+
+### Pacifying behaviors that are bypassed
+
+1. **Gold-armor pacification** (vanilla rule: piglin treats a player as
+   neutral if the player wears any piece of gold armor on any slot).
+   Implementation: every 10 ticks, for each adult piglin, find the
+   nearest eligible player within 16 blocks and force-set the piglin's
+   `NEAREST_TARGETABLE_PLAYER_NOT_WEARING_GOLD` brain memory slot to
+   that player. Vanilla AI normally clears this slot when it detects
+   gold armor on the player; we re-set it every half-second, so any
+   neutral window is imperceptible.
+
+2. **Gold-item admiration** (vanilla rule: a piglin that picks up a
+   gold item enters a ~5-second admire state during which it stops
+   attacking and may trade). Implementation: every 10 ticks we erase
+   the piglin's `ADMIRING_ITEM` and `ADMIRING_DISABLED` brain memory
+   slots, so admiration never gains traction.
+
+### What's NOT changed
+
+- **Baby piglins** — skipped. In vanilla they never attack adults,
+  they panic-flee. Force-aggroing babies would just make them flicker
+  between flee and attack states.
+- **Piglin Brutes** — already always-hostile in vanilla, no handling
+  needed.
+- **Zoglins** (zombified piglins) — already always-hostile.
+- **Vanilla detection range** — preserved at 16 blocks. The mechanic
+  removes the gold-armor exception without buffing detection.
+- **Vanilla invisibility respect** — players with the Invisibility
+  potion effect are still ignored.
+- **Creative / spectator** — players in these modes are not targeted.
+- **Trading mechanic via piglin gold-trade**  — implicitly broken
+  (admiration is bypassed). Player can no longer barter with piglins
+  by throwing gold ingots. This is a side-effect of "always hostile"
+  that aligns with the user's intent: piglins are enemies, not traders.
+
+### Files
+
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AlwaysHostilePiglinsEvents.java`
+  — new file. Single class with a `LivingEvent.LivingTickEvent` handler.
+  ~90 lines including thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AlwaysHostilePiglinsEvents()` on the Forge event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `AlwaysHostilePiglinsEvents.java`):
+- `AGGRO_RADIUS = 16.0` — block distance to detect player.
+- `CHECK_INTERVAL_TICKS = 10` (~0.5 s) — how often to re-apply target.
+
+---
+
+## Phase 3.2 — Zombified piglins always hostile
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "это ты сделал для пиглинов, теперь я
+хочу чтобы и свинозомби всегда были враждебны"
+
+**Mechanic:** zombified piglins (`ZombifiedPiglin`, the neutral undead
+piglin variant — NOT to be confused with Zoglins, which are already
+always-hostile in vanilla) attack the player on sight instead of
+waiting to be provoked. The vanilla "neutral until attacked, then
+angry for 25 s" rule is bypassed.
+
+**How it works:** zombified piglins use the `NeutralMob` interface with
+a UUID-keyed "persistent anger target" and a per-tick anger timer.
+Vanilla sets the target + timer only when the player attacks the piglin
+(or attacks a herd-mate). Every 10 ticks (~0.5 s) we:
+
+1. Locate the closest non-creative / non-spectator / alive /
+   non-invisible player within 16 blocks of the zombified piglin.
+2. Force-set `setPersistentAngerTarget(player.getUUID())`.
+3. Force-set `setRemainingPersistentAngerTime(1200)` (60 s), enough
+   that the anger timer never lapses between refreshes.
+4. Force-set `setTarget(player)` if it isn't already, so the piglin
+   begins its chase / attack animation immediately.
+
+**Herd aggro propagation preserved.** Vanilla zombified piglins
+broadcast anger to nearby herd-mates when one is provoked. With every
+adult piglin individually force-angered, the entire visible herd
+becomes uniformly hostile around the player.
+
+**What's NOT changed:**
+
+- **Baby zombified piglins** — skipped. They don't attack in vanilla,
+  they follow the herd. Force-aggroing babies creates AI flicker.
+- **Zoglins** (`Zoglin`). Different entity class, already always-hostile
+  in vanilla.
+- **Piglin Brutes**, **regular Piglins**. Different entities; piglins
+  handled by Phase 3.1; brutes already always-hostile.
+- **Vanilla follow_range** (~35 blocks). Once angered, the piglin uses
+  vanilla chase range. We only set the trigger at 16 blocks.
+- **Invisibility respect.** Vanilla zombified piglins ignore invisible
+  players; we preserve that.
+- **Creative / spectator** — players in these modes are not targeted.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AlwaysHostileZombifiedPiglinsEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~105 lines with
+  thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AlwaysHostileZombifiedPiglinsEvents()` on the Forge
+  event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `AlwaysHostileZombifiedPiglinsEvents.java`):
+- `AGGRO_RADIUS = 16.0` — block distance to start angering.
+- `CHECK_INTERVAL_TICKS = 10` (~0.5 s) — how often to re-apply anger.
+- `ANGER_REFRESH_TICKS = 1200` (60 s) — anger timer pushed each refresh.
+
+---
+
+## Phase 3.3 — Ghasts hear at 100 blocks
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Гасты слышат на 100 блоков"
+from the follow-up multiple-choice prompt.
+
+**Mechanic:** the vanilla `Ghast` entity's `FOLLOW_RANGE` attribute is
+bumped from 64 to 100 blocks at spawn. Ghasts now notice and start
+shooting at players from significantly further away.
+
+**How it works:** the `Ghast` entity's target selector uses a vanilla
+`NearestAttackableTargetGoal<Player>(this, Player.class, 10, true,
+false, predicate)` goal that scans for players within
+`Mob#getFollowDistance()`, which returns the `FOLLOW_RANGE` attribute.
+On `EntityJoinLevelEvent`, we set the ghast's `FOLLOW_RANGE` base
+value to 100. Vanilla 64 → 100 = +56% detection range.
+
+**Preserved vanilla constraints:**
+
+- **±4 block vertical filter.** The vanilla target predicate ignores
+  any player whose Y coordinate differs from the ghast's Y by more
+  than 4 blocks. This filter is what stops ghasts from sniping
+  through whole biomes at hidden players. We do NOT remove it.
+- **Line of sight requirement.** Vanilla `NearestAttackableTargetGoal`
+  uses `mob.getSensing().hasLineOfSight(target)`. A player behind a
+  wall is still safe.
+- **Other attribute modifiers stack.** We use `setBaseValue`, so any
+  +modifier (e.g. from `HardcoreEvents` enemy buff layer) is still
+  applied on top.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/GhastFollowRangeEvents.java`
+  — new file. `EntityJoinLevelEvent` handler. ~45 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new GhastFollowRangeEvents()` on the Forge event bus.
+
+**Tunable constants** (in `GhastFollowRangeEvents.java`):
+- `GHAST_FOLLOW_RANGE = 100.0` — new base detection range in blocks.
+
+---
+
+## Phase 3.4 — Magma blocks burn harder
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** selected "Магма-блоки сильнее жгут"
+from the same follow-up prompt as Phase 3.3.
+
+**Mechanic:** while a living entity is standing on a magma block, two
+extra effects are applied each tick:
+
+1. **Slowness I** for 40 ticks (2 s), refreshed every tick. The
+   effect always shows ~2 s remaining while on the block and expires
+   quickly after stepping off.
+2. **2 seconds of fire** via `setSecondsOnFire(2)`, refreshed every
+   tick. Vanilla fire damage ticks once per second for 1 damage, so
+   this adds ~+1 DPS on top of vanilla magma's step-on damage.
+
+Net: magma blocks now deal **~2 DPS** instead of ~1 DPS to a player
+standing on them, AND slow movement, AND keep burning briefly after
+the player escapes.
+
+**Vanilla exemptions preserved:**
+
+- **Crouching** (`isSteppingCarefully()`) — no damage / slowness /
+  fire. Same as vanilla magma behavior.
+- **Frost Walker enchantment on boots** — no damage / slowness /
+  fire. Same as vanilla.
+- **Fire-immune entities** (blazes, striders, skeleton horses) —
+  skipped, since their fire-immunity makes the burning bonus
+  meaningless anyway.
+
+**Additional exemptions added by this mechanic:**
+
+- **Airborne entities** — only entities physically standing on the
+  block are affected. Jumping above the block is safe.
+- **Creative / spectator players** — skipped.
+
+**Dimension scope:** the mechanic applies wherever magma blocks
+exist (Nether by default, but also Overworld underwater ravines).
+Player-placed magma blocks in a base are also affected — building
+near magma is intentionally hazardous.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/MagmaBlockHazardEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~110 lines with
+  thorough comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new MagmaBlockHazardEvents()` on the Forge event bus.
+
+**Tunable constants** (in `MagmaBlockHazardEvents.java`):
+- `SLOWNESS_DURATION_TICKS = 40` (2 s) — refreshed each tick.
+- `SLOWNESS_AMPLIFIER = 0` (level I).
+- `FIRE_REFRESH_SECONDS = 2` — fire bonus refresh interval.
+
+---
+
+## Phase 3.5 — Pigs explode on death (25%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "можешь сделать, что при убийстве
+обычной свиньи будет шанс что она моментально взорвётся как
+крипер(шанс примерно 25%)"
+
+**Mechanic:** when a regular {@code minecraft:pig} dies, roll a 25%
+chance to detonate a creeper-equivalent explosion at the pig's
+center. No fuse, no hiss — the explosion fires the same tick the
+pig dies.
+
+**How it works:** `LivingDeathEvent` fires server-side when any
+living entity dies. Filter to `Pig` instances only, then
+`pig.getRandom().nextFloat() < 0.25f`. If passed, call
+`Level#explode(null, x, y+halfHeight, z, 3.0f, MOB)`.
+
+**Affected entities:**
+
+- `minecraft:pig` (regular pig). Baby pigs included (they share the
+  `Pig` class).
+
+**NOT affected:**
+
+- Piglins (`Piglin` — different class, Phase 3.1 handles them).
+- Zombified piglins (`ZombifiedPiglin` — different class, Phase 3.2).
+- Piglin brutes (`PiglinBrute` — different class).
+- Hoglins, Zoglins — different classes.
+- Striders, sheep, cows, etc. — not pigs.
+
+**Explosion details:**
+
+- Power **3.0** — matches vanilla un-charged creeper. Charged
+  creepers use 6.0 (not used here).
+- Interaction mode **MOB** — terrain damage respects `mobGriefing`
+  game rule. Entity damage always applies.
+- Source entity **null** — explosion is anonymous, no killer
+  attribution. Avoids "you were killed by pig" death messages.
+- Position centered on pig's mid-body (`y + bbHeight/2`).
+
+**Order with vanilla drops:** `LivingDeathEvent` fires BEFORE the
+vanilla loot table is rolled. Items (pork chops, raw porkchop,
+saddle if it was a ridden pig) spawn after the explosion and survive
+the blast — players keep their drops.
+
+**Edge cases handled:**
+
+- **Lightning-struck pigs.** Vanilla `thunderHit` calls
+  `pig.discard()` and spawns a new ZombifiedPiglin. No
+  `LivingDeathEvent` fires for the original pig — no explosion.
+  Correct: the pig wasn't really "killed".
+- **Pigs killed in creative.** Still triggers (death is death).
+- **Pigs killed by /kill command.** Still triggers.
+- **Pigs killed by fall / cactus / lava / drowning / suffocation.**
+  All trigger `LivingDeathEvent` → roll applies.
+
+**Risk for the player:** killing a pig at point-blank range with a
+sword now means a 25% chance of taking ~24 HP of explosion damage
+yourself. Players should consider using a bow / crossbow / dropping
+gravel on the pig, or simply attacking and stepping back.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ExplodingPigEvents.java`
+  — new file. `LivingDeathEvent` handler. ~65 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ExplodingPigEvents()` on the Forge event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `ExplodingPigEvents.java`):
+- `EXPLOSION_CHANCE = 0.25f` — probability per pig death.
+- `EXPLOSION_POWER = 3.0f` — vanilla creeper power.
+
+---
+
+## Phase 3.6 — Chickens lay TNT instead of eggs (10%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Курицы откладывают TNT вместо яиц"
+
+**Mechanic:** when an adult chicken lays an egg (vanilla cadence:
+once per 5-10 minutes per chicken), there is a 10% chance the egg
+item is replaced with a primed TNT entity with a 4-second fuse.
+
+**How it works:** `EntityJoinLevelEvent` fires for every entity
+joining the level, including `ItemEntity`s spawned by
+`Chicken#aiStep` → `spawnAtLocation(Items.EGG)`. We filter to
+ItemEntities containing `Items.EGG` and check for a `Chicken`
+within 1.5 blocks (to distinguish naturally-laid eggs from
+player-dropped eggs). On the 10% roll, we cancel the egg spawn and
+add a `PrimedTnt` entity at the same position.
+
+**Player-thrown eggs are unaffected.** When a player "throws" an
+egg in vanilla, the projectile is a `ThrownEgg` (not an
+`ItemEntity`), so this handler never matches.
+
+**Chicken jockeys.** Vanilla chickens being ridden by baby zombies
+(chicken jockeys) don't lay eggs in `aiStep`, so the handler never
+fires for them — they would have nothing to replace.
+
+**TNT details:**
+- Fuse 80 ticks (4 seconds) — vanilla default.
+- Owner null (anonymous explosion).
+- Power 4.0 — vanilla TNT power; matches a placed-and-ignited TNT
+  block exactly.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ChickenLaysTntEvents.java`
+  — new file. `EntityJoinLevelEvent` handler. ~95 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ChickenLaysTntEvents()` on the Forge event bus.
+
+**Tunable constants** (in `ChickenLaysTntEvents.java`):
+- `TNT_CHANCE = 0.10f` — replacement probability.
+- `CHICKEN_PROXIMITY_RADIUS = 1.5` — search radius for nearby chicken.
+- `TNT_FUSE_TICKS = 80` — TNT fuse duration.
+
+---
+
+## Phase 3.7 — Sheep sheared → Wither (10%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Овцы при стрижке могут заразить
+иссушением"
+
+**Mechanic:** when a player right-clicks an unsheared adult sheep
+with shears, there is a 10% chance the player receives Wither I
+for 5 seconds (~2-3 HP damage). The shear itself still succeeds.
+
+**How it works:** `PlayerInteractEvent.EntityInteract` fires when a
+player right-clicks any entity. Filter:
+- Target is a `Sheep`.
+- Sheep is not already sheared (`isSheared() == false`).
+- Sheep is an adult (babies have no wool).
+- Held item is `Items.SHEARS`.
+
+On 10% roll, apply Wither I effect to the player for 100 ticks. We
+do NOT cancel the event — vanilla shear proceeds normally.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/SheepShearedWitherEvents.java`
+  — new file. `PlayerInteractEvent.EntityInteract` handler. ~80 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new SheepShearedWitherEvents()` on the Forge event bus.
+
+**Tunable constants** (in `SheepShearedWitherEvents.java`):
+- `WITHER_CHANCE = 0.10f` — wither application probability.
+- `WITHER_DURATION_TICKS = 100` (5 s).
+- `WITHER_AMPLIFIER = 0` (level I).
+
+---
+
+## Phase 3.8 — Rabbits sometimes explode from jumping (2%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Кролики иногда взрываются от
+прыжка"
+
+**Mechanic:** every time a rabbit jumps (vanilla rabbit AI jumps
+every 1-3 seconds), there is a 2% chance the rabbit detonates a
+small (power 1.5) explosion at its position, killing itself.
+
+**How it works:** Forge's `LivingEvent.LivingJumpEvent` fires when
+any living entity jumps. Filter to `Rabbit` instances and roll 2%.
+On success, call `Level#explode(null, x, y+halfHeight, z, 1.5,
+MOB)`. Same anonymous-explosion pattern as Phase 3.5 pig deaths.
+
+**Power 1.5 vs 3.0** — half of vanilla creeper. Rabbits are small;
+a full creeper-strength explosion would feel disproportionate.
+Power 1.5 typically kills rabbits and small mobs within 2 blocks
+but does little terrain damage.
+
+**Affected entities:**
+- Regular rabbits (all biome variants).
+- Killer Bunny (vanilla rare aggressive variant) — same Rabbit class.
+- Baby rabbits — same Rabbit class.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ExplodingRabbitJumpEvents.java`
+  — new file. `LivingEvent.LivingJumpEvent` handler. ~70 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ExplodingRabbitJumpEvents()` on the Forge event bus.
+
+**Tunable constants** (in `ExplodingRabbitJumpEvents.java`):
+- `EXPLODE_CHANCE = 0.02f` — per-jump probability.
+- `EXPLODE_POWER = 1.5f` — half of vanilla creeper.
+
+---
+
+## Phase 3.9 — Horses buck rider at low HP (30%/sec below 30% HP)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "Лошади брыкаются и сбрасывают
+игрока"
+
+**Mechanic:** when a player rides an `AbstractHorse` (regular
+horses, donkeys, mules, skeleton horses, zombie horses, llamas)
+and the horse's health is below 30% of max, every second there is
+a 30% chance the horse bucks — ejects all passengers AND throws
+them upward with a +0.5 velocity impulse.
+
+**How it works:** `LivingEvent.LivingTickEvent` filtered to
+`AbstractHorse`. Every 20 ticks, check:
+- Has passengers.
+- HP < 30% of max.
+
+If both true, roll 30%. On success: snapshot passengers, call
+`horse.ejectPassengers()`, then for each `LivingEntity` passenger
+set Y velocity to 0.5 (upward impulse) so the rider physically
+flies off, not just dismounts.
+
+**Net player experience.** A wounded horse refuses to be ridden.
+After bucking, the player can re-mount, but a 30% buck check per
+second means they're likely thrown again within 3-4 seconds. The
+player must heal the horse (golden carrot, hay bale, golden apple)
+or wait for natural regen before riding it consistently.
+
+**Fall damage emerges naturally.** The +0.5 upward impulse + vanilla
+gravity creates ~0.5-1.0 block fall. On flat ground this is
+harmless; on cliffs or stone the player takes fall damage. Same as
+a real-life buck.
+
+**Llamas included.** `AbstractChestedHorse` extends `AbstractHorse`,
+and `Llama` extends `AbstractChestedHorse`, so llamas buck too. A
+llama at low HP throwing off its rider feels consistent.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/AngryHorseBuckEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~105 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new AngryHorseBuckEvents()` on the Forge event bus.
+
+**Tunable constants** (in `AngryHorseBuckEvents.java`):
+- `LOW_HP_THRESHOLD = 0.30f` — HP ratio threshold (30%).
+- `BUCK_CHECK_INTERVAL_TICKS = 20` (1 s) — check cadence.
+- `BUCK_CHANCE_PER_CHECK = 0.30f` — buck probability per check.
+- `BUCK_UPWARD_IMPULSE = 0.5` — rider Y velocity on eject.
+
+---
+
+## Phase 3.10 — Endermen aggro on proximity in crimson/warped forest
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction:** "Эндермены в багровом/искажённом лесу более
+чувствительные"
+
+**Mechanic:** in {@code minecraft:crimson_forest} and
+{@code minecraft:warped_forest} biomes (Nether's two enderman
+hotspot biomes), endermen aggro on the nearest eligible player
+within 12 blocks WITHOUT needing the player to look at them. Other
+Nether biomes (nether_wastes, soul_sand_valley, basalt_deltas) and
+Overworld/End endermen keep vanilla look-only aggro.
+
+**How it works:** `LivingEvent.LivingTickEvent` filtered to
+`EnderMan`. Every 10 ticks, biome lookup at the enderman's
+position; if not crimson/warped forest, skip. If enderman has no
+existing target, find nearest eligible player within 12 blocks
+and force `setTarget`. Endermen use Goal-based AI (not the brain
+memory system used by piglins in Phase 3.1/3.2), so `setTarget` is
+the correct entry point.
+
+**Carved pumpkin defense preserved.** Vanilla endermen ignore
+players wearing a carved pumpkin helmet. This is a well-known
+strategy and removing it would feel like an unfair surprise.
+Players with `Items.CARVED_PUMPKIN` in helmet slot are still
+ignored by this handler.
+
+**Creative/spectator/invisible players excluded** as with other
+aggro mechanics.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/EndermanProximityAggroEvents.java`
+  — new file. `LivingEvent.LivingTickEvent` handler. ~110 lines.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new EndermanProximityAggroEvents()` on the Forge
+  event bus.
+
+**Tunable constants** (in `EndermanProximityAggroEvents.java`):
+- `AGGRO_RADIUS = 12.0` — max aggro distance.
+- `CHECK_INTERVAL_TICKS = 10` — half-second cadence.
+
+---
+
+## Phase 3.11 — Bed in Nether 50% chance to ignite floor
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction:** "Кровать в Незере имеет шанс сразу зажечь
+пол"
+
+**Mechanic:** when a player right-clicks a bed in the Nether
+(`Level.NETHER`), vanilla normally triggers a powerful explosion
+(power 5.0, ignores block protection, ~25 HP damage at close
+range). With this handler, there is a 50% chance the explosion is
+replaced by a "floor ignition" effect: bed blocks are removed and
+fire blocks are placed on solid floor surfaces in a 3-block radius
+around the bed, at ~30% density.
+
+**Two outcomes per bed-click in Nether:**
+
+1. **50% — vanilla explosion.** The bed explodes as in vanilla.
+   Player takes massive damage if close.
+2. **50% — floor ignition.** Bed is destroyed silently (no
+   explosion). Fire blocks spawn on netherrack / stone / other
+   solid surfaces in a 7×3×2 box around the bed. On netherrack
+   (vanilla infinite-burn surface) these fires last forever and
+   create a long-term hazard.
+
+**Player survives ignition outcome** (no direct damage) but is
+standing in a burning area and will take fire damage unless they
+move quickly.
+
+**Implementation:** `PlayerInteractEvent.RightClickBlock` fires
+BEFORE `BedBlock#use` runs the vanilla explosion. On 50% roll, we
+set canceled = true (preventing vanilla) and manually:
+- Identify head & foot blocks of the bed (BedBlock.FACING +
+  BedBlock.PART).
+- Remove both blocks silently.
+- Scan a 3-block radius for air spaces above solid floors and
+  spawn `Blocks.FIRE` at 30% density.
+
+**Dimension restriction:** Nether only. End beds keep vanilla
+explosion. Overworld beds work normally (bedWorks() = true).
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/BedIgnitesFloorEvents.java`
+  — new file. `PlayerInteractEvent.RightClickBlock` handler.
+  ~135 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new BedIgnitesFloorEvents()` on the Forge event bus.
+
+**Tunable constants** (in `BedIgnitesFloorEvents.java`):
+- `IGNITE_CHANCE = 0.5f` — probability of floor-ignite vs vanilla
+  explosion.
+- `FIRE_RADIUS = 3` — horizontal radius for fire spread.
+- `FIRE_HEIGHT_EXTENT = 1` — vertical extent (Y..Y+1).
+- `FIRE_DENSITY = 0.30f` — per-cell fire probability.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.

@@ -177,7 +177,7 @@ bushcraft chain. Models reuse vanilla textures.
    Only the lang label (`Crude Stone *`) marks them. Acceptable for now;
    may want unique textures later.
 
-### Phase 2.3a — Mining gate scaffold (default-deny, EMPTY whitelist) ⏳ in-PR
+### Phase 2.3a — Mining gate scaffold (default-deny, EMPTY whitelist) ✅ done
 
 Inverts the vanilla "all blocks breakable, only tier-gated" rule. Now
 **all blocks are unbreakable** by default, and each tier has a datapack
@@ -191,29 +191,148 @@ until follow-up PRs unlock blocks one at a time.
 Implementation: `events/MiningGate.java` (Forge `PlayerEvent.BreakSpeed`
 + `BlockEvent.BreakEvent`), 6 tag files, registered handler.
 
-### Phase 2.3b — Block shards (planned, variant A)
+### Phase 2.2.y — Crude diamond tools ✅ done
 
-Every block in the game eventually drops **shards** instead of itself. To
-recombine a block, the player needs more shards than the block dropped —
-50% loss at the recombine step (block drops 2 shards, recipe is 4 shards
-→ 1 block).
+Top of the GTW tier ladder. `GTW_DIAMOND` mirrors `Tiers.DIAMOND` (level
+3, +3.0 dmg) but with 50% durability (780 vs 1561) and 75% mining speed
+(6.0 vs 8.0). Repair = `diamond`. 5 new items: `diamond_pickaxe / _axe
+/ _sword / _shovel / _hoe`, vanilla baseline HUD attack stats, vanilla
+textures reused. Recipes use `minecraft:diamond` + stick + cordage
+(sword: cordage, no stick). Same caveats as Phase 2.2.x — recipe
+advancements aren't generated, models reuse vanilla textures, mining
+gate is still empty so the tools can be crafted but cannot break any
+block until Phase 2.3b lands.
 
-Variant A confirmed by user: **one universal `glebthanwolves:stone_shard`**
-covers the entire stone family (stone, cobblestone, granite, andesite,
-diorite, deepslate, and tuff/calcite/etc.). Per-block shards may be added
-later only for specific blocks where the loss of identity matters
-(e.g. `iron_shard` for iron-tier ores, `diamond_shard` for end-game).
+### Phase 2.3b — Block shards + 24-category mining logic (planned, in-design)
 
-First scope: **only stone family** (~10 blocks). Implementation:
-1. New item `glebthanwolves:stone_shard`.
-2. New GLM `BlockShardModifier` (similar to `AddItemModifier` but
-   replaces the block's drops with `stone_shard × 2`).
-3. GLM rules: tag `glebthanwolves:has_stone_shard` lists every block
-   that should drop the shard.
-4. Recipe: 4 stone_shard → 1 cobblestone (shaped 2×2).
-5. Silk-touch carve-out (Q6): if held tool has `Enchantments.SILK_TOUCH`,
-   skip the GLM and let vanilla drop the original block. This preserves
-   silk-touch as a high-tier shortcut.
+User's final design pivot (replaces the earlier "variant A, universal
+stone_shard" idea): **24 distinct shard items**, one per block family.
+The full design is in `MINING_DESIGN.md` (also linked from `HISTORY.md`).
+Summary of categories:
+
+| # | Category | Drop | Tier (mine) |
+|---|---|---|---|
+| 0  | ORGANIC_SOFT      | `organic_fiber`              | hand    |
+| 1  | LEAF_FAMILY       | `leaf_fragment` (additive)   | hand    |
+| 2  | DIRT_FAMILY       | `dirt_chunk`                 | hand    |
+| 3  | SAND_FAMILY       | `sand_pile`                  | hand    |
+| 4  | GRAVEL_FAMILY     | `gravel_piece` (additive)    | hand    |
+| 5  | SNOW_FAMILY       | `snow_chunk`                 | hand    |
+| 6  | WOOD_FAMILY       | `wood_chip`                  | wood    |
+| 7  | SOFT_STONE        | `stone_fragment`             | wood    |
+| 8  | HARD_STONE        | `deepstone_fragment`         | stone   |
+| 9  | BASIC_ORE         | `ore_fragment`               | wood    |
+| 10 | METAL_ORE         | `metal_fragment`             | stone   |
+| 11 | RARE_ORE          | `rare_fragment`              | iron    |
+| 12 | ANCIENT_MATERIAL  | `ancient_fragment`           | diamond |
+| 13 | NETHER_STONE      | `nether_fragment`            | stone   |
+| 14 | DECORATIVE_BLOCKS | `brick_fragment`             | wood    |
+| 15 | HARD_DECORATIVE   | `hard_brick_fragment`        | iron    |
+| 16 | GLASS_FAMILY      | `glass_shard`                | wood    |
+| 17 | WOOL_FAMILY       | `cloth_piece`                | hand    |
+| 18 | CERAMIC_FAMILY    | `ceramic_piece`              | wood    |
+| 19 | CONCRETE_FAMILY   | `concrete_dust`              | stone   |
+| 20 | METAL_BLOCKS      | `compressed_metal_fragment`  | iron    |
+| 21 | PRECIOUS_BLOCKS   | `precious_fragment`          | diamond |
+| 22 | MACHINE_FAMILY    | `machine_scrap`              | iron    |
+| 23 | LIGHT_FAMILY      | `light_fragment`             | hand    |
+| 24 | SPECIAL_UNBREAKABLE | (no drop, can't be mined) | n/a     |
+
+**Carve-outs from the "everything → shard" rule** (locked-in design
+decisions, see `MINING_DESIGN.md` for rationale):
+
+- **Crops** (`wheat`, `carrots`, `potatoes`, `beetroot`,
+  `sweet_berry_bush`) are **not** in the shard system — vanilla drops
+  remain so food chains still work.
+- **Leaves** drop `leaf_fragment` **additively** alongside vanilla
+  saplings / apples / sticks, otherwise sapling regen breaks and the
+  world soft-locks.
+- **Gravel** drops `gravel_piece` **additively** with vanilla flint
+  (10%), otherwise `primitive_axe` becomes uncraftable on spawn.
+- **Suspicious sand / suspicious gravel** are excluded from the shard
+  system; vanilla brushing / archaeology stays as-is.
+- **Boats** are entities, not blocks — they don't go through the
+  mining gate. (Listed in WOOD_FAMILY as a craft-side concern only.)
+- **Silk-touch** bypasses the shard GLM and drops the original block
+  (Q6: "вариант б — silk-touch обходит shard-механику").
+- **Furnace / chest / crafting_table / stations** drop their family
+  shard on break, **not the placed item** (BTW-style commitment —
+  once placed, you cannot relocate them). This is the user's
+  intentional design from the SOFT_STONE / WOOD_FAMILY listings.
+
+**Ore recombine recipes** (per user: ores also drop fragments, then
+combine back):
+
+- 4 `ore_fragment` → 1 `coal` (or 1 `raw_copper`) — player picks recipe.
+- 4 `metal_fragment` → 1 `raw_iron` (or 4 `lapis_lazuli` / 4 `redstone`).
+- 4 `rare_fragment` → 1 `raw_gold` / 1 `emerald` / 1 `diamond` / 1
+  `quartz`.
+- 4 `ancient_fragment` → 1 `ancient_debris` (block, not netherite).
+
+**Implementation skeleton (planned for the PR):**
+
+1. 24 new items in `ModItems.java` (one per category).
+2. 24 GLMs (one per category) in `data/glebthanwolves/loot_modifiers/`.
+3. 24 block tags (`glebthanwolves:has_<name>_shard`) listing every block
+   that drops that fragment.
+4. Mining gate whitelists (`breakable_by/<tier>`) updated to reference
+   the 24 category tags via `forge:replace=false` includes.
+5. Recombine recipes (one per re-craftable target — many).
+6. `MINING_DESIGN.md` design document with the full block list (~750
+   blocks) annotated by category, including the not-yet-categorized
+   blocks (bookshelf, composter, beehive, mob heads, sculk family,
+   amethyst clusters, copper variants, slabs / stairs / walls of every
+   stone family, banners, shulker boxes, etc.).
+
+### Phase 2.5+ — Targeted shards (current plan, replaces failed 2.3b)
+
+After the rollback of 2.3b (151-recipe 18-category disaster), the agreed
+plan is **one shard per material, one small PR each, only for blocks/ores
+that are needed in vanilla crafts**. Each shard ships independently, the
+user tests, signs off, then the next one is built.
+
+**Final agreed shard list (in implementation order):**
+
+| Order | Shard | Ratio | Source blocks | Status |
+|---|---|---|---|---|
+| 1 | `cobblestone_fragment` | 2 → 1 cobble | `minecraft:stone` only | ✅ Phase 2.5 done |
+| 2 | `iron_fragment` | 4 → 1 raw_iron | `iron_ore`, `deepslate_iron_ore` | ✅ Phase 2.6 done |
+| 3 | `gold_fragment` | 4 → 1 raw_gold | `gold_ore`, `deepslate_gold_ore`, `nether_gold_ore` | ✅ Phase 2.7 done |
+| 4 | `diamond_fragment` | 4 → 1 diamond | `diamond_ore`, `deepslate_diamond_ore` | ✅ Phase 2.8 done |
+| 5 | `copper_fragment` | 4 → 1 raw_copper | `copper_ore`, `deepslate_copper_ore` | ✅ Phase 2.9 done |
+| 6 | `quartz_fragment` | 4 → 1 nether_quartz | `nether_quartz_ore` | ✅ Phase 2.10 done |
+| 7 | `coal_fragment` | 2 → 1 coal | `coal_ore`, `deepslate_coal_ore` | ✅ Phase 2.11 done |
+
+**Skipped (per user):** netherite tools, lapis_fragment, emerald_fragment.
+
+**Implementation pattern (lessons from failed 2.3b):**
+
+1. **Override the vanilla loot table** at `data/minecraft/loot_tables/blocks/<ore>.json`
+   — single file, replaces the entire vanilla drop pool. Silk-touch path
+   preserved when it makes sense (e.g. `minecraft:stone` block under
+   silk touch still drops `minecraft:stone`).
+2. **One shapeless recipe** at `data/glebthanwolves/recipes/<material>_from_fragments.json`
+   — N fragments → 1 vanilla material item. Player crafts in 2×2 inventory
+   grid, no table needed.
+3. **No mining-gate, no whitelist, no default-deny.** Vanilla tier gating
+   (`needs_*_tool`) already handles "wrong pickaxe → no drop"; the shard
+   override only changes WHAT drops when the pickaxe IS correct.
+4. **Fortune behavior:** preserve vanilla — ore shards inherit the same
+   `apply_bonus(fortune, ore_drops)` function the original loot table used.
+   `minecraft:stone` → `cobblestone_fragment` does NOT get Fortune, since
+   vanilla cobble from stone also doesn't.
+5. **Chest loot untouched.** Player can still find vanilla ingots/gems in
+   chests (mineshaft, dungeon, etc.). May revisit later if it undermines
+   the shard mechanic too much.
+
+### Phase 2.3c — Found tools weaker (planned, deferred)
+
+User said in chat (Q7): "пока ничего не делаем, а потом заменим спавн на
+наши инструменты" — i.e. found-vanilla-tool weakening is **deferred** in
+favor of replacing the spawn (structure loot tables in Phase 2.7) so that
+vanilla tools don't appear at all. The mechanics below are kept as a
+fallback in case structure-loot replacement turns out to leak vanilla
+tools through some path.
 
 ### Phase 2.3c — Found tools weaker (planned, deferred)
 
@@ -312,7 +431,112 @@ recipe overrides, legacy-conversion path.
 
 ## Phase 3 plan (sketch only)
 
-### Phase 3.0 — Nether overhaul
+### Phase 3.0 — Nether idle hazard ✅ done
+
+First incremental Nether-difficulty mechanic, delivered ahead of the
+full Nether overhaul. While in the Nether, idle players (on the ground
+for 5 seconds without a real jump) catch fire. Real-jump detection uses
+airborne-tick duration (≥ 5 ticks) to block the "block over head + spam
+jump" exploit. See `HISTORY.md` for the design discussion.
+
+### Phase 3.1 — Piglins always hostile ✅ done
+
+Second incremental Nether-difficulty mechanic. Piglins ignore gold
+armor and attack the player unconditionally. The "throw gold ingot to
+distract" trick is also disabled (admiration state is bypassed).
+Implementation: per-tick brain memory manipulation in
+`AlwaysHostilePiglinsEvents.java`. Baby piglins, Piglin Brutes, and
+Zoglins are not touched.
+
+### Phase 3.2 — Zombified piglins always hostile ✅ done
+
+Third incremental Nether-difficulty mechanic. Zombified piglins
+(`ZombifiedPiglin`, the neutral undead variant) skip the
+"neutral-until-provoked" stage and attack on sight. Implementation:
+per-tick `setPersistentAngerTarget` + `setRemainingPersistentAngerTime`
+refresh in `AlwaysHostileZombifiedPiglinsEvents.java`. Baby zombified
+piglins, Zoglins, and piglin brutes are not touched.
+
+### Phase 3.3 — Ghasts hear at 100 blocks ✅ done
+
+Fourth incremental Nether-difficulty mechanic. Vanilla Ghast
+`FOLLOW_RANGE` attribute is bumped from 64 to 100 blocks at spawn.
+Vanilla ±4-block Y filter and line-of-sight requirement are
+preserved. Implementation: `EntityJoinLevelEvent` →
+`setBaseValue(100.0)` in `GhastFollowRangeEvents.java`.
+
+### Phase 3.4 — Magma blocks burn harder ✅ done
+
+Fifth incremental Nether-difficulty mechanic. Magma blocks gain two
+extra effects on living entities standing on them: Slowness I
+(refreshed each tick) and 2 seconds of fire (refreshed each tick).
+Net: ~2 DPS instead of vanilla ~1 DPS. Vanilla exemptions preserved:
+crouching, frost-walker boots, fire-immune entities. Implementation:
+per-tick check in `MagmaBlockHazardEvents.java`.
+
+### Phase 3.5 — Pigs explode on death (25%) ✅ done
+
+First mob-quirk mechanic (not Nether-specific). Killing a regular
+`Pig` triggers a 25% roll for an instant creeper-equivalent explosion
+(power 3.0, no fuse, `MOB` interaction so terrain damage respects
+`mobGriefing`). Drops survive (vanilla loot rolls after the event).
+Piglins, zombified piglins, piglin brutes, hoglins, zoglins are
+separate classes and unaffected. Implementation:
+`LivingDeathEvent` handler in `ExplodingPigEvents.java`.
+
+### Phase 3.6 — Chickens lay TNT instead of eggs (10%) ✅ done
+
+When an adult chicken lays an egg (vanilla cadence: every 5-10 min),
+there is a 10% chance the egg `ItemEntity` is replaced with a primed
+TNT entity (4-second fuse). Player-thrown eggs (which are
+`ThrownEgg` projectiles, not `ItemEntity`s) are unaffected.
+Implementation: `EntityJoinLevelEvent` cancellation in
+`ChickenLaysTntEvents.java`.
+
+### Phase 3.7 — Sheep sheared → Wither (10%) ✅ done
+
+When a player right-clicks an unsheared adult sheep with shears,
+there is a 10% chance the player gets Wither I for 5 seconds
+(~2-3 HP). The shear itself still succeeds. Implementation:
+`PlayerInteractEvent.EntityInteract` handler in
+`SheepShearedWitherEvents.java`.
+
+### Phase 3.8 — Rabbits explode from jumping (2%) ✅ done
+
+Every rabbit jump rolls a 2% chance for a small (power 1.5)
+explosion at the rabbit's position, killing the rabbit. Includes
+Killer Bunny variant and baby rabbits (all `Rabbit` class).
+Implementation: `LivingEvent.LivingJumpEvent` handler in
+`ExplodingRabbitJumpEvents.java`.
+
+### Phase 3.9 — Horses buck rider at low HP ✅ done
+
+When a player rides an `AbstractHorse` (horses, donkeys, mules,
+skeleton/zombie horses, llamas) at < 30% HP, every second there is
+a 30% chance the horse bucks — ejects all passengers and applies
+an upward velocity impulse. Player must heal the horse to ride it
+consistently. Implementation: `LivingEvent.LivingTickEvent` handler
+in `AngryHorseBuckEvents.java`.
+
+### Phase 3.10 — Endermen aggro on proximity in crimson/warped ✅ done
+
+In `crimson_forest` and `warped_forest` biomes only, endermen
+aggro on the nearest eligible player within 12 blocks WITHOUT
+needing the look trigger. Carved pumpkin helmet defense is
+preserved. Other Nether biomes and other dimensions keep vanilla
+look-only aggro. Implementation: `LivingEvent.LivingTickEvent`
+handler in `EndermanProximityAggroEvents.java`.
+
+### Phase 3.11 — Bed in Nether 50% ignites floor ✅ done
+
+Right-clicking a bed in the Nether: 50% chance vanilla explosion,
+50% chance the bed is silently destroyed and fire blocks are
+spawned in a 3-block radius around the bed (30% density). On
+netherrack the fires burn forever. Implementation:
+`PlayerInteractEvent.RightClickBlock` handler in
+`BedIgnitesFloorEvents.java`.
+
+### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.
 - New ores, blocks, crafting blocks unique to the dimension.
