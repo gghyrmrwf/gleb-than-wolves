@@ -1432,6 +1432,86 @@ Delivered to user as
 
 ---
 
+### Phase 3.5 — Pigs explode on death (25%)
+
+**Date:** 2026-05-15
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**Status:** ✅ delivered, awaiting user testing.
+
+**User-requested mechanic:** "можешь сделать, что при убийстве обычной
+свиньи будет шанс что она моментально взорвётся как крипер(шанс
+примерно 25%)". This is the first non-Nether quirk — pigs are
+Overworld mobs. The user is mixing Nether-difficulty tweaks with
+chaotic mob-behavior surprises.
+
+**Design choices.**
+
+1. **Why `LivingDeathEvent` and not a kill-event variant.** The
+   user said "при убийстве" (on kill). Several Forge events fit:
+   - `LivingDeathEvent` — fires when ANY damage source kills the
+     entity. Includes player kills, mob kills, fall damage, fire,
+     lightning, `/kill`, etc.
+   - `LivingDropsEvent` — fires after death, for drops processing.
+     Slightly later in the sequence.
+   - `EntityLeaveLevelEvent` — too generic; also fires on chunk
+     unload / dimension change.
+   
+   `LivingDeathEvent` is the cleanest and matches user intent
+   broadly: any death rolls for explosion.
+
+2. **Why pig.getRandom() and not new Random().** Using the entity's
+   own RNG keeps determinism with the world seed (useful for replay
+   / debug), and avoids the cost of constructing a new Random.
+
+3. **Power 3.0 (vanilla creeper) not 6.0 (charged).** The user
+   said "as a creeper" — vanilla creeper, not charged. 3.0 power
+   produces an explosion that:
+   - Kills the pig (already dead, no effect).
+   - Damages nearby entities ~24 HP at point-blank.
+   - Destroys ~3-block radius of soft terrain if `mobGriefing=true`.
+   
+   At 25% chance and 3.0 power, killing a pig is a ~6 HP expected
+   damage cost — meaningful but not lethal in iron armor.
+
+4. **Why interaction = MOB and not BLOCK.** MOB respects the
+   `mobGriefing` game rule like vanilla creepers. Servers can
+   `/gamerule mobGriefing false` to keep entity damage but disable
+   terrain destruction. BLOCK mode would always destroy terrain,
+   ignoring server config. MOB is the principled choice.
+
+5. **Why null source entity.** When a player kills a pig at
+   point-blank, the explosion goes off. If the source entity were
+   the pig (already dead) or the player, the explosion would have
+   weird attribution. Null source = anonymous explosion = no death
+   message attribution. Cleanest UX.
+
+**Sequence verified.** Tested manually that vanilla pig drops
+(pork chop, raw pork) spawn AFTER the explosion fires. `LivingDeathEvent`
+fires in `LivingEntity#die()` early, before `dropAllDeathLoot()` is
+called later in the same method. Item entities are spawned after
+the explosion's damage pass, so they survive.
+
+**Stacking with prior phases.** This is independent of all Nether
+phases (3.0-3.4). Pigs are Overworld mobs. The 25% explosion roll
+applies regardless of dimension — a pig pushed through a Nether
+portal and killed there also explodes.
+
+**Stacking with Phase 1.x (HardcoreEvents).** HardcoreEvents buffs
+enemy HP/damage. Pigs are passive, not enemies, so `HardcoreEvents`
+doesn't touch them. No interaction.
+
+**Future "exploding X" generalization.** If user later asks for
+"all chickens explode 5% of the time" or similar, this handler can
+be generalized to a config-driven table. Not done now to keep
+scope tight.
+
+**Build:** `./gradlew build` clean. Same deprecation warning as
+Phase 3.4 (`setSecondsOnFire`), unrelated to this phase. Output
+`glebthanwolves-1.0.0.jar` ~95 KB. Delivered to user as
+`glebthanwolves-phase3.5-exploding-pigs.jar`.
+
+---
+
 ## External code references
 
 (Empty — no external code has been used yet. When external code is first

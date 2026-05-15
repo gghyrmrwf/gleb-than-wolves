@@ -474,6 +474,16 @@ Net: ~2 DPS instead of vanilla ~1 DPS. Vanilla exemptions preserved:
 crouching, frost-walker boots, fire-immune entities. Implementation:
 per-tick check in `MagmaBlockHazardEvents.java`.
 
+### Phase 3.5 — Pigs explode on death (25%) ✅ done
+
+First mob-quirk mechanic (not Nether-specific). Killing a regular
+`Pig` triggers a 25% roll for an instant creeper-equivalent explosion
+(power 3.0, no fuse, `MOB` interaction so terrain damage respects
+`mobGriefing`). Drops survive (vanilla loot rolls after the event).
+Piglins, zombified piglins, piglin brutes, hoglins, zoglins are
+separate classes and unaffected. Implementation:
+`LivingDeathEvent` handler in `ExplodingPigEvents.java`.
+
 ### Phase 3.0+ — Nether overhaul (future)
 
 - Nether becomes a proper *second* progression layer, not a shortcut.

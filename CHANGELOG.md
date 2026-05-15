@@ -1301,6 +1301,82 @@ near magma is intentionally hazardous.
 
 ---
 
+## Phase 3.5 — Pigs explode on death (25%)
+
+**Branch:** `devin/1778243030-phase-2-3-tier-tighten` (continued)
+**User instruction (verbatim):** "можешь сделать, что при убийстве
+обычной свиньи будет шанс что она моментально взорвётся как
+крипер(шанс примерно 25%)"
+
+**Mechanic:** when a regular {@code minecraft:pig} dies, roll a 25%
+chance to detonate a creeper-equivalent explosion at the pig's
+center. No fuse, no hiss — the explosion fires the same tick the
+pig dies.
+
+**How it works:** `LivingDeathEvent` fires server-side when any
+living entity dies. Filter to `Pig` instances only, then
+`pig.getRandom().nextFloat() < 0.25f`. If passed, call
+`Level#explode(null, x, y+halfHeight, z, 3.0f, MOB)`.
+
+**Affected entities:**
+
+- `minecraft:pig` (regular pig). Baby pigs included (they share the
+  `Pig` class).
+
+**NOT affected:**
+
+- Piglins (`Piglin` — different class, Phase 3.1 handles them).
+- Zombified piglins (`ZombifiedPiglin` — different class, Phase 3.2).
+- Piglin brutes (`PiglinBrute` — different class).
+- Hoglins, Zoglins — different classes.
+- Striders, sheep, cows, etc. — not pigs.
+
+**Explosion details:**
+
+- Power **3.0** — matches vanilla un-charged creeper. Charged
+  creepers use 6.0 (not used here).
+- Interaction mode **MOB** — terrain damage respects `mobGriefing`
+  game rule. Entity damage always applies.
+- Source entity **null** — explosion is anonymous, no killer
+  attribution. Avoids "you were killed by pig" death messages.
+- Position centered on pig's mid-body (`y + bbHeight/2`).
+
+**Order with vanilla drops:** `LivingDeathEvent` fires BEFORE the
+vanilla loot table is rolled. Items (pork chops, raw porkchop,
+saddle if it was a ridden pig) spawn after the explosion and survive
+the blast — players keep their drops.
+
+**Edge cases handled:**
+
+- **Lightning-struck pigs.** Vanilla `thunderHit` calls
+  `pig.discard()` and spawns a new ZombifiedPiglin. No
+  `LivingDeathEvent` fires for the original pig — no explosion.
+  Correct: the pig wasn't really "killed".
+- **Pigs killed in creative.** Still triggers (death is death).
+- **Pigs killed by /kill command.** Still triggers.
+- **Pigs killed by fall / cactus / lava / drowning / suffocation.**
+  All trigger `LivingDeathEvent` → roll applies.
+
+**Risk for the player:** killing a pig at point-blank range with a
+sword now means a 25% chance of taking ~24 HP of explosion damage
+yourself. Players should consider using a bow / crossbow / dropping
+gravel on the pig, or simply attacking and stepping back.
+
+**Files:**
+- `src/main/java/com/gghyrmrwf/glebthanwolves/events/ExplodingPigEvents.java`
+  — new file. `LivingDeathEvent` handler. ~65 lines with comments.
+- `src/main/java/com/gghyrmrwf/glebthanwolves/GlebThanWolves.java`
+  — register `new ExplodingPigEvents()` on the Forge event bus.
+
+No new items, recipes, loot tables, or localization strings.
+Server-side only.
+
+**Tunable constants** (in `ExplodingPigEvents.java`):
+- `EXPLOSION_CHANCE = 0.25f` — probability per pig death.
+- `EXPLOSION_POWER = 3.0f` — vanilla creeper power.
+
+---
+
 ## Removed experiment — Phase 1.15 cave danger
 
 Phase 1.15 briefly added deep-cave Darkness/Weakness and rare cave ambushes.
